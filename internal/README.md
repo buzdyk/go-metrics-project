@@ -1,3 +1,26 @@
-# internal
-
-В данной директории и её поддиректориях будет содержаться имплементация вашего сервиса
+const (
+// GCCPUFraction = "gc-cpu-fraction"
+// GCSys         = "gc-sys"
+// HeapAlloc     = "heap-alloc"
+// HeapIdle      = "heap-idle"
+// HeapInuse     = "heap-in-use"
+// HeapObjects   = "heap-objects"
+// HeapReleased  = "heap-released"
+// HeapSys       = "heap-sys"
+// LastGC        = "last-gc"
+// Lookups       = "lookups"
+// MCacheInuse   = "m-cache-in-use"
+// MCacheSys     = "m-cache-sys"
+// MSpanInuse    = "m-span-in-use"
+// MSpanSys      = "m-span-sys"
+// Mallocs       = "m-allocs"
+// NextGC        = "next-gc"
+// NumForcedGC   = "num-forced-gc"
+// NumGC         = "num-gc"
+// OtherSys      = "other-sys"
+// PauseTotalNs  = "pause-total-ns"
+// StackInuse    = "stack-in-use"
+// StackSys      = "stack-sys"
+// Sys           = "sys"
+// TotalAlloc    = "total-alloc"
+)
