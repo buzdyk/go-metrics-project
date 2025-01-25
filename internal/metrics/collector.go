@@ -1,7 +1,9 @@
 package metrics
 
-type Collector struct {
-	Collect func() (Gauge, error)
-}
+import "runtime"
 
-type Collectors []Collector
+func Alloc() uint64 {
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+	return m.Alloc
+}

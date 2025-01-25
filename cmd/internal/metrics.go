@@ -6,5 +6,3 @@ type metrics interface {
 }
 
 type Gauge struct{}
-
-type Counter struct{}
