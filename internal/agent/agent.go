@@ -16,9 +16,9 @@ type Agent struct {
 }
 
 func (a *Agent) collect() {
-	if a.data == nil {
-		a.data = make(map[string]interface{})
-	}
+	//if a.data == nil {
+	//	a.data = make(map[string]interface{})
+	//}
 
 	a.collector.Collect(a.data)
 	fmt.Println("Collected", a.data)

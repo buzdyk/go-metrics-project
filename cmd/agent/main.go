@@ -9,7 +9,7 @@ func main() {
 	collector := &metrics.Collector{}
 	client := &agent.RealHttpClient{
 		Endpoint: "http://127.0.0.1",
-		Port:     8000,
+		Port:     8080,
 	}
 
 	a, err := agent.NewAgent(collector, client)
