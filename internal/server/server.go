@@ -9,7 +9,7 @@ type Server struct{}
 
 func (s *Server) Run() {
 	router := http.NewServeMux()
-	router.Handle("POST /update/{type}/{metric}/{value}", metricExists(http.HandlerFunc(StoreMetric)))
+	router.Handle("POST /update/{type}/{metric}/{value}", http.HandlerFunc(StoreMetric))
 
 	fmt.Println("Started metrics server on :8080")
 

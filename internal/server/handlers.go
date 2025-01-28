@@ -1,9 +1,11 @@
 package server
 
 import (
+	"github.com/buzdyk/go-metrics-project/internal/metrics"
 	"github.com/buzdyk/go-metrics-project/internal/storage"
 	"log"
 	"net/http"
+	"strconv"
 )
 
 var store = storage.NewMemStorage()
@@ -13,14 +15,19 @@ var StoreMetric = func(rw http.ResponseWriter, r *http.Request) {
 	metricName := r.PathValue("metric")
 	metricValue := r.PathValue("value")
 
-	//g := metrics.Gauge{}
+	// todo move to middleware
+	if _, ok := metrics.Collectors[r.PathValue("metric")]; ok == false {
+		http.Error(rw, "metric does not exist", http.StatusBadRequest)
+		return
+	}
 
-	//switch metricType {
-	//case "gauge":
-	//	store.StoreGauge(&g)
-	//case "counter":
-	//	//store.StoreCounter()
-	//}
+	v, err := strconv.ParseFloat(metricValue, 64)
+
+	if err != nil {
+		http.Error(rw, "metric value is not convertible to Float64", http.StatusBadRequest)
+	}
+
+	store.StoreGauge(metricName, metrics.Gauge(v))
 
 	log.Default().Println("type:", metricType, "metric", metricName, metricValue)
 

@@ -1,6 +1,9 @@
 package storage
 
-import "github.com/buzdyk/go-metrics-project/internal/metrics"
+import (
+	"github.com/buzdyk/go-metrics-project/internal/metrics"
+	"sync"
+)
 
 type Storage interface {
 	StoreGauge(m *metrics.Gauge) (bool, error)
@@ -8,11 +11,14 @@ type Storage interface {
 
 type MemStorage struct {
 	g map[string][]metrics.Gauge
+	m sync.Mutex
 }
 
-func (s *MemStorage) StoreGauge(g *metrics.Gauge) (bool, error) {
-	//v, _ := g.Value()
-	//s.g[g.ID()] = append(s.g[g.ID()], v)
+func (s *MemStorage) StoreGauge(name string, v metrics.Gauge) (bool, error) {
+	s.m.Lock()
+	defer s.m.Unlock()
+
+	s.g[name] = append(s.g[name], v)
 
 	return true, nil
 }
