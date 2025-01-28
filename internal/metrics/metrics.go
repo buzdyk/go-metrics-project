@@ -1,7 +1,6 @@
 package metrics
 
 import (
-	"fmt"
 	"math/rand"
 	"reflect"
 	"runtime"
@@ -41,7 +40,7 @@ var memStats = []string{
 }
 
 type Collector struct {
-	pollCount int
+	pollCount Counter
 }
 
 func (c *Collector) Collect(out map[string]interface{}) {
@@ -51,9 +50,8 @@ func (c *Collector) Collect(out map[string]interface{}) {
 
 	for _, stat := range memStats {
 		field := r.FieldByName(stat)
-		fmt.Println(field.Kind())
 		switch field.Kind() {
-		case reflect.Uint64:
+		case reflect.Uint64, reflect.Uint32:
 			out[stat] = Gauge(field.Uint())
 		case reflect.Float64:
 			out[stat] = Gauge(field.Float())
@@ -64,7 +62,7 @@ func (c *Collector) Collect(out map[string]interface{}) {
 	c.pollCount += 1
 
 	out["PollCount"] = c.pollCount
-	out["RandomValue"] = rand.NormFloat64()
+	out["RandomValue"] = Gauge(rand.NormFloat64())
 }
 
 func Exists(metric string) bool {

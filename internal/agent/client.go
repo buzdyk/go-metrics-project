@@ -35,7 +35,7 @@ func (hc *RealHttpClient) Post(id string, value interface{}) (*http.Response, er
 
 		return res, nil
 	default:
-		log.Printf("WARNING: Unknown type %v\n", v)
+		log.Printf("WARNING: Unknown type %v %t %T\n", v, v, v)
 		return nil, errors.New("unknown type in real http client")
 	}
 }
