@@ -1,14 +1,15 @@
-package main
+package server
 
 import (
 	"fmt"
-	"github.com/buzdyk/go-metrics-project/internal/server"
 	"net/http"
 )
 
-func main() {
+type Server struct{}
+
+func (s *Server) Run() {
 	router := http.NewServeMux()
-	router.HandleFunc("POST /update/{type}/{metric}/{value}", server.StoreMetric)
+	router.Handle("POST /update/{type}/{metric}/{value}", metricExists(http.HandlerFunc(StoreMetric)))
 
 	fmt.Println("Started metrics server on :8080")
 

@@ -1,4 +1,4 @@
-package handlers
+package server
 
 import (
 	"github.com/buzdyk/go-metrics-project/internal/storage"
@@ -24,8 +24,8 @@ var StoreMetric = func(rw http.ResponseWriter, r *http.Request) {
 
 	log.Default().Println("type:", metricType, "metric", metricName, metricValue)
 
-	//rw.WriteHeader(200)
-	//rw.Write([]byte("ok"))
+	rw.WriteHeader(200)
+	rw.Write([]byte("ok"))
 	//
 	//fmt.Println(storage)
 }
