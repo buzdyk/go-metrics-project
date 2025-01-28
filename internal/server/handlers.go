@@ -16,7 +16,7 @@ var StoreMetric = func(rw http.ResponseWriter, r *http.Request) {
 	metricValue := r.PathValue("value")
 
 	// todo move to middleware
-	if _, ok := metrics.Collectors[r.PathValue("metric")]; ok == false {
+	if metrics.Exists(r.PathValue("metric")) == false {
 		http.Error(rw, "metric does not exist", http.StatusBadRequest)
 		return
 	}
@@ -33,6 +33,4 @@ var StoreMetric = func(rw http.ResponseWriter, r *http.Request) {
 
 	rw.WriteHeader(200)
 	rw.Write([]byte("ok"))
-	//
-	//fmt.Println(storage)
 }

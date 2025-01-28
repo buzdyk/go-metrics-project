@@ -11,6 +11,7 @@ type Storage interface {
 
 type MemStorage struct {
 	g map[string][]metrics.Gauge
+	c map[string]metrics.Counter
 	m sync.Mutex
 }
 

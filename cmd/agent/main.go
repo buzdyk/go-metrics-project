@@ -3,24 +3,16 @@ package main
 import (
 	"github.com/buzdyk/go-metrics-project/internal/agent"
 	"github.com/buzdyk/go-metrics-project/internal/metrics"
-	"io"
-	"net/http"
 )
 
-type RealHttpClient struct{}
-
-func (hc *RealHttpClient) Post(endpoint, contentType string, body io.Reader) (res *http.Response, err error) {
-	res, err = http.Post(endpoint, contentType, body)
-
-	if err != nil {
-		return nil, err
+func main() {
+	collector := &metrics.Collector{}
+	client := &agent.RealHttpClient{
+		Endpoint: "http://127.0.0.1",
+		Port:     8000,
 	}
 
-	return res, nil
-}
-
-func main() {
-	a, err := agent.NewAgent(metrics.Collectors, &RealHttpClient{})
+	a, err := agent.NewAgent(collector, client)
 
 	if err != nil {
 		panic(err)
