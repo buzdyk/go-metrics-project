@@ -37,7 +37,7 @@ func init() {
 		config.Address = "0.0.0.0:8080"
 	}
 
-	if strings.HasPrefix(config.Address, "http://") == false {
+	if !strings.HasPrefix(config.Address, "http://") {
 		config.Address = "http://" + config.Address
 	}
 
