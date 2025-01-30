@@ -8,10 +8,15 @@ import (
 func main() {
 	collector := &metrics.Collector{}
 	client := &agent.RealHttpClient{
-		Host: "http://127.0.0.1:8080",
+		Host: config.Address,
 	}
 
-	a, err := agent.NewAgent(collector, client)
+	agentConfig := agent.Config{
+		Report:  config.Report,
+		Collect: config.Collect,
+	}
+
+	a, err := agent.NewAgent(agentConfig, collector, client)
 
 	if err != nil {
 		panic(err)
