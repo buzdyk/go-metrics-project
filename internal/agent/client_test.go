@@ -2,7 +2,6 @@ package agent
 
 import (
 	"errors"
-	"fmt"
 	"github.com/buzdyk/go-metrics-project/internal/metrics"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -20,19 +19,11 @@ func TestRealHttpClient_Post(t *testing.T) {
 
 		switch counter {
 		case 1:
-			if r.URL.Path != "/update/gauge/metric/42" {
-				t.Errorf("Expected to request '/update/gauge/metric/42', got: %s", r.URL.Path)
-			}
-			if r.Header.Get("Content-Type") != "text/plain" {
-				t.Errorf("Expected Accept: application/json header, got: %s", r.Header.Get("Accept"))
-			}
+			assert.Equal(t, "/update/gauge/metric/42", r.URL.Path)
+			assert.Equal(t, "text/plain", r.Header.Get("Content-Type"))
 		case 2:
-			if r.URL.Path != "/update/counter/metric/42" {
-				t.Errorf("Expected to request '/update/counter/metric/42', got: %s", r.URL.Path)
-			}
-			if r.Header.Get("Content-Type") != "text/plain" {
-				t.Errorf("Expected Accept: application/json header, got: %s", r.Header.Get("Accept"))
-			}
+			assert.Equal(t, "/update/counter/metric/42", r.URL.Path)
+			assert.Equal(t, "text/plain", r.Header.Get("Content-Type"))
 		case 3:
 			t.Error("expected 2 http requests, got 3rd")
 		}
@@ -40,13 +31,14 @@ func TestRealHttpClient_Post(t *testing.T) {
 	}))
 
 	defer server.Close()
-	fmt.Println(server.URL)
+
 	client := &RealHttpClient{
 		Host: server.URL,
 	}
 
 	client.Post("metric", metrics.Gauge(42))
 	client.Post("metric", metrics.Counter(42))
+
 	_, err := client.Post("metric", int64(20))
 
 	var want UnknownTypeError

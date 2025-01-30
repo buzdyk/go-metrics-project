@@ -12,10 +12,6 @@ func (t UnknownTypeError) Error() string {
 	return "unknown variable type"
 }
 
-type HttpClient interface {
-	Post(name string, value interface{}) (*http.Response, error)
-}
-
 type RealHttpClient struct {
 	Host string
 }

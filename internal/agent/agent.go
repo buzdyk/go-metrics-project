@@ -2,8 +2,13 @@ package agent
 
 import (
 	"fmt"
+	"net/http"
 	"time"
 )
+
+type HttpClient interface {
+	Post(name string, value interface{}) (*http.Response, error)
+}
 
 type MetricsCollector interface {
 	Collect(map[string]interface{})
@@ -17,7 +22,6 @@ type Agent struct {
 
 func (a *Agent) collect() {
 	a.collector.Collect(a.data)
-	fmt.Println("Collected", a.data)
 }
 
 func (a *Agent) sync() {
