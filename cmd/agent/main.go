@@ -7,7 +7,7 @@ import (
 
 func main() {
 	collector := &metrics.Collector{}
-	client := &agent.RealHttpClient{
+	client := &agent.RealHTTPClient{
 		Host: config.Address,
 	}
 

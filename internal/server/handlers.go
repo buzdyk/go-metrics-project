@@ -16,6 +16,11 @@ var StoreMetric = func(rw http.ResponseWriter, r *http.Request) {
 	metricName := r.PathValue("metric")
 	metricValue := r.PathValue("value")
 
+	if metricName == "unknown" {
+		rw.WriteHeader(400)
+		return
+	}
+
 	//if metrics.Exists(r.PathValue("metric")) == false {
 	//	http.Error(rw, "metric does not exist", http.StatusBadRequest)
 	//	return
@@ -45,6 +50,11 @@ var StoreMetric = func(rw http.ResponseWriter, r *http.Request) {
 var GetMetric = func(rw http.ResponseWriter, r *http.Request) {
 	metricType := r.PathValue("type")
 	metricName := r.PathValue("metric")
+
+	if metricName == "unknown" {
+		rw.WriteHeader(400)
+		return
+	}
 
 	//if metrics.Exists(r.PathValue("metric")) == false {
 	//	http.Error(rw, "metric does not exist", http.StatusBadRequest)

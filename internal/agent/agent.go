@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-type HttpClient interface {
+type HTTPClient interface {
 	Post(name string, value interface{}) (*http.Response, error)
 }
 
@@ -18,7 +18,7 @@ type MetricsCollector interface {
 type Agent struct {
 	config    Config
 	collector MetricsCollector
-	client    HttpClient
+	client    HTTPClient
 	data      map[string]interface{}
 	mu        sync.RWMutex
 }
@@ -39,8 +39,18 @@ func (a *Agent) sync() {
 		wg.Add(1)
 		go func(id string, value interface{}) {
 			defer wg.Done()
+			var err error
+			var r *http.Response
+			r, err = a.client.Post(id, value)
 
-			if _, err := a.client.Post(id, value); err != nil {
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+
+			err = r.Body.Close()
+
+			if err != nil {
 				fmt.Println(err)
 			}
 		}(id, value)
@@ -66,7 +76,7 @@ func (a *Agent) Run() {
 	}
 }
 
-func NewAgent(config Config, collector MetricsCollector, client HttpClient) (*Agent, error) {
+func NewAgent(config Config, collector MetricsCollector, client HTTPClient) (*Agent, error) {
 	return &Agent{
 		config,
 		collector,

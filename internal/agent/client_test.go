@@ -32,14 +32,23 @@ func TestRealHttpClient_Post(t *testing.T) {
 
 	defer server.Close()
 
-	client := &RealHttpClient{
+	client := &RealHTTPClient{
 		Host: server.URL,
 	}
 
-	client.Post("metric", metrics.Gauge(42))
-	client.Post("metric", metrics.Counter(42))
+	var (
+		r   *http.Response
+		err error
+	)
 
-	_, err := client.Post("metric", int64(20))
+	r, _ = client.Post("metric", metrics.Gauge(42))
+	r.Body.Close()
+	r, _ = client.Post("metric", metrics.Counter(42))
+	r.Body.Close()
+	r, err = client.Post("metric", int64(20))
+	if r != nil {
+		r.Body.Close()
+	}
 
 	var want UnknownTypeError
 	assert.True(t, errors.As(err, &want))
