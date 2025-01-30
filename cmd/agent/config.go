@@ -4,6 +4,7 @@ import (
 	"flag"
 	"os"
 	"strconv"
+	"strings"
 )
 
 type Config struct {
@@ -36,7 +37,7 @@ func init() {
 		config.Address = "0.0.0.0:8080"
 	}
 
-	if config.Address == "localhost" {
+	if strings.HasPrefix(config.Address, "http://") == false {
 		config.Address = "http://" + config.Address
 	}
 

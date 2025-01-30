@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"os"
+	"strings"
 )
 
 type Config struct {
@@ -24,5 +25,9 @@ func init() {
 		config.Address = *addrFlag
 	default:
 		config.Address = "0.0.0.0:8080"
+	}
+
+	if strings.HasPrefix(config.Address, "http://") == false {
+		config.Address = "http://" + config.Address
 	}
 }
