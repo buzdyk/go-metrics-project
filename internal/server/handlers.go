@@ -16,6 +16,12 @@ var StoreMetric = func(rw http.ResponseWriter, r *http.Request) {
 	metricName := r.PathValue("metric")
 	metricValue := r.PathValue("value")
 
+	// todo move this to middleware
+	if metricType != "counter" && metricType != "gauge" {
+		rw.WriteHeader(400)
+		return
+	}
+
 	if metricName == "unknown" {
 		rw.WriteHeader(400)
 		return
@@ -50,6 +56,11 @@ var StoreMetric = func(rw http.ResponseWriter, r *http.Request) {
 var GetMetric = func(rw http.ResponseWriter, r *http.Request) {
 	metricType := r.PathValue("type")
 	metricName := r.PathValue("metric")
+
+	if metricType != "counter" && metricType != "gauge" {
+		rw.WriteHeader(400)
+		return
+	}
 
 	if metricName == "unknown" {
 		rw.WriteHeader(400)
