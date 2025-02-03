@@ -1,26 +1,27 @@
 package main
 
 import (
+	"fmt"
 	"github.com/buzdyk/go-metrics-project/internal/agent"
 	"github.com/buzdyk/go-metrics-project/internal/metrics"
 )
 
 func main() {
+	config := agent.NewConfigFromCLI()
+
 	collector := &metrics.Collector{}
 	client := &agent.RealHTTPClient{
 		Host: config.Address,
 	}
 
-	agentConfig := agent.Config{
-		Report:  config.Report,
-		Collect: config.Collect,
-	}
-
-	a, err := agent.NewAgent(agentConfig, collector, client)
+	a, err := agent.NewAgent(config, collector, client)
 
 	if err != nil {
 		panic(err)
 	}
+
+	fmt.Println("started agent")
+	fmt.Println("  with config: ", config)
 
 	a.Run()
 }

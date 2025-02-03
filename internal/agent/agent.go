@@ -76,9 +76,9 @@ func (a *Agent) Run() {
 	}
 }
 
-func NewAgent(config Config, collector MetricsCollector, client HTTPClient) (*Agent, error) {
+func NewAgent(config *Config, collector MetricsCollector, client HTTPClient) (*Agent, error) {
 	return &Agent{
-		config,
+		*config,
 		collector,
 		client,
 		make(map[string]interface{}),

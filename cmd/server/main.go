@@ -3,9 +3,7 @@ package main
 import "github.com/buzdyk/go-metrics-project/internal/server"
 
 func main() {
-	s := server.NewServer(server.Config{
-		Address: config.Address,
-	})
-
+	c := server.NewConfigFromCLI()
+	s := server.NewServer(c)
 	s.Run()
 }
