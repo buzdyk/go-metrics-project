@@ -14,11 +14,7 @@ func main() {
 		Host: config.Address,
 	}
 
-	a, err := agent.NewAgent(config, collector, client)
-
-	if err != nil {
-		panic(err)
-	}
+	a := agent.NewAgent(config, collector, client)
 
 	fmt.Println("started agent")
 	fmt.Println("  with config: ", config)

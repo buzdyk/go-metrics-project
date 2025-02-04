@@ -39,19 +39,15 @@ func (a *Agent) sync() {
 		wg.Add(1)
 		go func(id string, value interface{}) {
 			defer wg.Done()
-			var err error
-			var r *http.Response
-			r, err = a.client.Post(id, value)
+
+			resp, err := a.client.Post(id, value)
+			if err == nil {
+				defer resp.Body.Close()
+			}
 
 			if err != nil {
 				fmt.Println(err)
 				return
-			}
-
-			err = r.Body.Close()
-
-			if err != nil {
-				fmt.Println(err)
 			}
 		}(id, value)
 	}
@@ -76,12 +72,11 @@ func (a *Agent) Run() {
 	}
 }
 
-func NewAgent(config *Config, collector MetricsCollector, client HTTPClient) (*Agent, error) {
+func NewAgent(config *Config, collector MetricsCollector, client HTTPClient) *Agent {
 	return &Agent{
-		*config,
-		collector,
-		client,
-		make(map[string]interface{}),
-		sync.RWMutex{},
-	}, nil
+		config:    *config,
+		collector: collector,
+		client:    client,
+		data:      make(map[string]interface{}),
+	}
 }
