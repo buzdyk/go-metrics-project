@@ -2,11 +2,13 @@ package server
 
 import (
 	"flag"
+	"fmt"
+	"github.com/caarlos0/env/v6"
 	"os"
 )
 
 type Config struct {
-	Address string
+	Address string `env:ADDRESS`
 }
 
 func NewConfig() Config {
@@ -23,6 +25,10 @@ func NewConfigFromCLI() Config {
 	flag.Parse()
 
 	config.Address = *address
+
+	if err := env.Parse(&config); err != nil {
+		fmt.Println("error parsing env:", err)
+	}
 
 	if envAddr := os.Getenv("ADDRESS"); envAddr != "" {
 		config.Address = envAddr

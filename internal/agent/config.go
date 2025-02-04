@@ -2,15 +2,15 @@ package agent
 
 import (
 	"flag"
-	"os"
-	"strconv"
+	"fmt"
+	"github.com/caarlos0/env/v6"
 	"strings"
 )
 
 type Config struct {
-	Address string
-	Report  int
-	Collect int
+	Address string `env:"ADDRESS"`
+	Report  int    `env:"REPORT"`
+	Collect int    `env:"COLLECT"`
 }
 
 func NewConfig() Config {
@@ -30,28 +30,12 @@ func NewConfigFromCLI() *Config {
 	config.Report = *report
 	config.Collect = *collect
 
-	if envAddr := os.Getenv("ADDRESS"); envAddr != "" {
-		config.Address = envAddr
+	if err := env.Parse(&config); err != nil {
+		fmt.Println("error parsing env", err)
 	}
 
 	if !strings.HasPrefix(config.Address, "http://") {
 		config.Address = "http://" + config.Address
-	}
-
-	if envReport := os.Getenv("REPORT"); envReport != "" {
-		v, err := strconv.Atoi(envReport)
-		if err != nil {
-			panic(err)
-		}
-		config.Report = v
-	}
-
-	if envCollect := os.Getenv("COLLECT"); envCollect != "" {
-		v, err := strconv.Atoi(envCollect)
-		if err != nil {
-			panic(err)
-		}
-		config.Collect = v
 	}
 
 	return &config
