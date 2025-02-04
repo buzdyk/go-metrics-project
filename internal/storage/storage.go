@@ -25,8 +25,14 @@ func (s *MemStorage[T]) Store(name string, v T) (bool, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.c[name] = v
+	var zeroVal T
 
+	switch any(zeroVal).(type) {
+	case metrics.Gauge:
+		s.c[name] = v
+	case metrics.Counter:
+		s.c[name] += v
+	}
 	return true, nil
 }
 
