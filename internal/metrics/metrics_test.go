@@ -11,7 +11,7 @@ import (
 // TestCollector_Collect ensures that Collect() populates memory stats correctly
 func TestCollector_Collect(t *testing.T) {
 	collector := &Collector{}
-	out := make(map[string]interface{})
+	out := make(map[string]any)
 
 	collector.Collect(out)
 
@@ -30,7 +30,7 @@ func TestCollector_Collect(t *testing.T) {
 // TestCollector_RandomValue ensures RandomValue is a float64
 func TestCollector_RandomValue(t *testing.T) {
 	collector := &Collector{}
-	out := make(map[string]interface{})
+	out := make(map[string]any)
 
 	collector.Collect(out)
 
@@ -41,7 +41,7 @@ func TestCollector_RandomValue(t *testing.T) {
 // TestCollector_PollCountIncrements ensures PollCount increments correctly
 func TestCollector_PollCountIncrements(t *testing.T) {
 	collector := &Collector{}
-	out := make(map[string]interface{})
+	out := make(map[string]any)
 
 	collector.Collect(out)
 	firstPollCount := collector.pollCount
@@ -69,7 +69,7 @@ func TestExists_InvalidMetrics(t *testing.T) {
 // TestCollector_CorrectDataTypes ensures all collected values are of correct types
 func TestCollector_CorrectDataTypes(t *testing.T) {
 	collector := &Collector{}
-	out := make(map[string]interface{})
+	out := make(map[string]any)
 	collector.Collect(out)
 
 	var mem runtime.MemStats

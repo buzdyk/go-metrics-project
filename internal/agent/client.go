@@ -22,7 +22,7 @@ func NewHTTPClient(host string) *RealHTTPClient {
 	}
 }
 
-func (hc *RealHTTPClient) Post(id string, value interface{}) (*http.Response, error) {
+func (hc *RealHTTPClient) Post(id string, value any) (*http.Response, error) {
 	switch v := value.(type) {
 	case metrics.Gauge:
 		res, err := hc.postGauge(id, v)

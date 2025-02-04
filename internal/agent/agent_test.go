@@ -19,7 +19,7 @@ type MockHTTPClient struct {
 	mock.Mock
 }
 
-func (m *MockHTTPClient) Post(name string, value interface{}) (*http.Response, error) {
+func (m *MockHTTPClient) Post(name string, value any) (*http.Response, error) {
 	args := m.Called(name, value)
 	resp, _ := args.Get(0).(*http.Response)
 	return resp, args.Error(1)
@@ -30,7 +30,7 @@ type MockMetricsCollector struct {
 	mock.Mock
 }
 
-func (m *MockMetricsCollector) Collect(out map[string]interface{}) {
+func (m *MockMetricsCollector) Collect(out map[string]any) {
 	m.Called(out)
 }
 
@@ -70,7 +70,7 @@ func TestAgentSync(t *testing.T) {
 	config := &Config{Address: "http://localhost:8080", Report: 10, Collect: 2}
 	agent := NewAgent(config, mockCollector, mockClient)
 
-	agent.data = map[string]interface{}{
+	agent.data = map[string]any{
 		"metric1": 100,
 		"metric2": 200,
 	}
@@ -96,7 +96,7 @@ func TestAgentSyncWithErrors(t *testing.T) {
 	config := &Config{Address: "http://localhost:8080", Report: 10, Collect: 2}
 	agent := NewAgent(config, mockCollector, mockClient)
 
-	agent.data = map[string]interface{}{
+	agent.data = map[string]any{
 		"metric1": 100,
 		"metric2": 200,
 	}

@@ -47,7 +47,7 @@ func NewCollector() *Collector {
 	return &Collector{}
 }
 
-func (c *Collector) Collect(out map[string]interface{}) {
+func (c *Collector) Collect(out map[string]any) {
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
 	r := reflect.ValueOf(m)

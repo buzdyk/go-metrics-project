@@ -8,18 +8,18 @@ import (
 )
 
 type HTTPClient interface {
-	Post(name string, value interface{}) (*http.Response, error)
+	Post(name string, value any) (*http.Response, error)
 }
 
 type MetricsCollector interface {
-	Collect(out map[string]interface{})
+	Collect(out map[string]any)
 }
 
 type Agent struct {
 	config    Config
 	collector MetricsCollector
 	client    HTTPClient
-	data      map[string]interface{}
+	data      map[string]any
 	mu        sync.RWMutex
 }
 
@@ -33,11 +33,12 @@ func (a *Agent) collect() {
 func (a *Agent) sync() {
 	a.mu.RLock()
 	defer a.mu.RUnlock()
+
 	var wg sync.WaitGroup
+	wg.Add(len(a.data))
 
 	for id, value := range a.data {
-		wg.Add(1)
-		go func(id string, value interface{}) {
+		go func(id string, value any) {
 			defer wg.Done()
 
 			resp, err := a.client.Post(id, value)
@@ -77,6 +78,6 @@ func NewAgent(config *Config, collector MetricsCollector, client HTTPClient) *Ag
 		config:    *config,
 		collector: collector,
 		client:    client,
-		data:      make(map[string]interface{}),
+		data:      make(map[string]any),
 	}
 }
