@@ -17,7 +17,7 @@ var StoreMetric = func(rw http.ResponseWriter, r *http.Request) {
 	metricValue := r.PathValue("value")
 
 	// todo move this to middleware
-	if metricType != "counter" && metricType != "gauge" {
+	if metrics.IsValidType(metricType) == false {
 		rw.WriteHeader(400)
 		return
 	}
@@ -28,13 +28,13 @@ var StoreMetric = func(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	switch metricType {
-	case "gauge":
+	case metrics.GaugeName:
 		v, err := strconv.ParseFloat(metricValue, 64)
 		if err != nil {
 			http.Error(rw, "metric value is not convertible to float64", http.StatusBadRequest)
 		}
 		store.StoreGauge(metricName, metrics.Gauge(v))
-	case "counter":
+	case metrics.CounterName:
 		v, err := strconv.Atoi(metricValue)
 		if err != nil {
 			http.Error(rw, "metric value is not convertible to int", http.StatusBadRequest)
@@ -52,12 +52,7 @@ var GetMetric = func(rw http.ResponseWriter, r *http.Request) {
 	metricType := r.PathValue("type")
 	metricName := r.PathValue("metric")
 
-	if metricType != "counter" && metricType != "gauge" {
-		rw.WriteHeader(400)
-		return
-	}
-
-	if metricName == "unknown" {
+	if metrics.IsValidType(metricType) == false {
 		rw.WriteHeader(400)
 		return
 	}
@@ -74,7 +69,7 @@ var GetMetric = func(rw http.ResponseWriter, r *http.Request) {
 		} else {
 			rw.Write([]byte(strconv.FormatFloat(float64(v), 'f', -1, 64)))
 		}
-	case "counter":
+	case metrics.CounterName:
 		v, err := store.Counter(metricName)
 		if err != nil {
 			rw.WriteHeader(404)

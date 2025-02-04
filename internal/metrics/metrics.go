@@ -9,6 +9,9 @@ import (
 type Gauge float64
 type Counter uint64
 
+const GaugeName = "gauge"
+const CounterName = "counter"
+
 var memStats = []string{
 	"Alloc",
 	"BuckHashSys",
@@ -73,4 +76,8 @@ func (c *Collector) Collect(out map[string]any) {
 
 func Exists(metric string) bool {
 	return metric != "unknown"
+}
+
+func IsValidType(t string) bool {
+	return t == GaugeName || t == CounterName
 }
