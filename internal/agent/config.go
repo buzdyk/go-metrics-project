@@ -2,7 +2,6 @@ package agent
 
 import (
 	"flag"
-	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -19,60 +18,41 @@ func NewConfig() Config {
 }
 
 func NewConfigFromCLI() *Config {
-	flag.Usage = usage
+	config := NewConfig()
 
-	addrFlag := flag.String("a", "", "Address of the server that collects metrics")
-	reportFlag := flag.Int("r", 0, "Report interval in seconds")
-	collectFlag := flag.Int("p", 0, "Poll interval in seconds")
+	address := flag.String("a", config.Address, "Address of the server that collects metrics")
+	report := flag.Int("r", config.Report, "Report interval in seconds")
+	collect := flag.Int("p", config.Collect, "Poll interval in seconds")
 
 	flag.Parse()
 
-	config := NewConfig()
+	config.Address = *address
+	config.Report = *report
+	config.Collect = *collect
 
-	var (
-		envAddr    = os.Getenv("ADDRESS")
-		envReport  = os.Getenv("REPORT")
-		envCollect = os.Getenv("COLLECT")
-	)
-
-	switch {
-	case envAddr != "":
+	if envAddr := os.Getenv("ADDRESS"); envAddr != "" {
 		config.Address = envAddr
-	case *addrFlag != "":
-		config.Address = *addrFlag
 	}
 
 	if !strings.HasPrefix(config.Address, "http://") {
 		config.Address = "http://" + config.Address
 	}
 
-	switch {
-	case envCollect != "":
+	if envReport := os.Getenv("REPORT"); envReport != "" {
+		v, err := strconv.Atoi(envReport)
+		if err != nil {
+			panic(err)
+		}
+		config.Report = v
+	}
+
+	if envCollect := os.Getenv("COLLECT"); envCollect != "" {
 		v, err := strconv.Atoi(envCollect)
 		if err != nil {
 			panic(err)
 		}
 		config.Collect = v
-	case *addrFlag != "":
-		config.Collect = *collectFlag
-	}
-
-	switch {
-	case envReport != "":
-		v, err := strconv.Atoi(envCollect)
-		if err != nil {
-			panic(err)
-		}
-		config.Report = v
-	case *addrFlag != "":
-		config.Report = *reportFlag
 	}
 
 	return &config
-}
-
-func usage() {
-	fmt.Fprintf(flag.CommandLine.Output(), "Usage of %s:\n", os.Args[0])
-	flag.PrintDefaults()
-	fmt.Println("version 0.1")
 }

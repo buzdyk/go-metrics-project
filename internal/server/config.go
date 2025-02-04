@@ -9,21 +9,23 @@ type Config struct {
 	Address string
 }
 
-func NewConfigFromCLI() Config {
-	var config Config
+func NewConfig() Config {
+	return Config{
+		"0.0.0.0:8080",
+	}
+}
 
-	addrFlag := flag.String("a", "", "Address to listen on")
+func NewConfigFromCLI() Config {
+	config := NewConfig()
+
+	address := flag.String("a", config.Address, "Address to listen on")
+
 	flag.Parse()
 
-	envAddr := os.Getenv("ADDRESS")
+	config.Address = *address
 
-	switch {
-	case envAddr != "":
+	if envAddr := os.Getenv("ADDRESS"); envAddr != "" {
 		config.Address = envAddr
-	case *addrFlag != "":
-		config.Address = *addrFlag
-	default:
-		config.Address = "0.0.0.0:8080"
 	}
 
 	return config

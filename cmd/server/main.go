@@ -1,6 +1,8 @@
 package main
 
-import "github.com/buzdyk/go-metrics-project/internal/server"
+import (
+	"github.com/buzdyk/go-metrics-project/internal/server"
+)
 
 func main() {
 	c := server.NewConfigFromCLI()
