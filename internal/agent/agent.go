@@ -20,7 +20,7 @@ type Agent struct {
 	config    Config
 	collector MetricsCollector
 	client    HTTPClient
-	data      map[string]any
+	data      map[string]interface{}
 	mu        sync.RWMutex
 }
 
