@@ -5,7 +5,6 @@ import (
 	"errors"
 	"github.com/buzdyk/go-metrics-project/internal/metrics"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"sync"
 	"testing"
@@ -104,7 +103,7 @@ func TestAgentSyncWithErrors(t *testing.T) {
 
 	mockResponse := &http.Response{
 		StatusCode: 200,
-		Body:       ioutil.NopCloser(bytes.NewBufferString("OK")),
+		Body:       io.NopCloser(bytes.NewBufferString("OK")),
 	}
 
 	mockClient.On("Post", "metric1", 100).Return(mockResponse, nil).Once()
