@@ -16,6 +16,12 @@ type RealHTTPClient struct {
 	Host string
 }
 
+func NewHTTPClient(host string) *RealHTTPClient {
+	return &RealHTTPClient{
+		Host: host,
+	}
+}
+
 func (hc *RealHTTPClient) Post(id string, value interface{}) (*http.Response, error) {
 	switch v := value.(type) {
 	case metrics.Gauge:

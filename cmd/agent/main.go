@@ -8,11 +8,8 @@ import (
 
 func main() {
 	config := agent.NewConfigFromCLI()
-
-	collector := &metrics.Collector{}
-	client := &agent.RealHTTPClient{
-		Host: config.Address,
-	}
+	collector := metrics.NewCollector()
+	client := agent.NewHTTPClient(config.Address)
 
 	a := agent.NewAgent(config, collector, client)
 

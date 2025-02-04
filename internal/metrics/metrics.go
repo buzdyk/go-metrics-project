@@ -43,6 +43,10 @@ type Collector struct {
 	pollCount Counter
 }
 
+func NewCollector() *Collector {
+	return &Collector{}
+}
+
 func (c *Collector) Collect(out map[string]interface{}) {
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
