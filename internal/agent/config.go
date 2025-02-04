@@ -31,7 +31,7 @@ func NewConfigFromCLI() *Config {
 	config.Collect = *collect
 
 	if err := env.Parse(&config); err != nil {
-		fmt.Println("error parsing env", err)
+		panic(fmt.Sprintf("error parsing env %v", err))
 	}
 
 	if !strings.HasPrefix(config.Address, "http://") {

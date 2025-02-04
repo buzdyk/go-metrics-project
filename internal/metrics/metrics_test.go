@@ -63,7 +63,7 @@ func TestExists_ValidMetrics(t *testing.T) {
 
 // TestExists_InvalidMetrics ensures Exists() returns false for unknown metrics
 func TestExists_InvalidMetrics(t *testing.T) {
-	assert.False(t, Exists("UnknownMetric"), "Exists should return false for unknown metric")
+	assert.False(t, Exists("unknown"), "Exists should return false for unknown metric")
 }
 
 // TestCollector_CorrectDataTypes ensures all collected values are of correct types

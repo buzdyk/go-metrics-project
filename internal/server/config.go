@@ -27,7 +27,7 @@ func NewConfigFromCLI() Config {
 	config.Address = *address
 
 	if err := env.Parse(&config); err != nil {
-		fmt.Println("error parsing env:", err)
+		panic(fmt.Sprintf("error parsing env: %v", err))
 	}
 
 	if envAddr := os.Getenv("ADDRESS"); envAddr != "" {

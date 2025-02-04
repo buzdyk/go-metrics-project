@@ -12,7 +12,8 @@ import (
 	"strconv"
 )
 
-var store = storage.NewMemStorage()
+var counterStore = storage.NewCounterMemStorage()
+var gaugeStore = storage.NewGaugeMemStorage()
 
 var StoreMetric = func(rw http.ResponseWriter, r *http.Request) {
 	metricType := r.PathValue("type")
@@ -32,17 +33,12 @@ var StoreMetric = func(rw http.ResponseWriter, r *http.Request) {
 
 	switch metricType {
 	case metrics.GaugeName:
-		v, err := strconv.ParseFloat(metricValue, 64)
-		if err != nil {
-			http.Error(rw, "metric value is not convertible to float64", http.StatusBadRequest)
-		}
-		store.StoreGauge(metricName, metrics.Gauge(v))
 	case metrics.CounterName:
 		v, err := strconv.Atoi(metricValue)
 		if err != nil {
 			http.Error(rw, "metric value is not convertible to int", http.StatusBadRequest)
 		}
-		store.StoreCounter(metricName, metrics.Counter(v))
+		counterStore.Store(metricName, metrics.Counter(v))
 	}
 
 	log.Default().Println("type:", metricType, "metric", metricName, metricValue)
@@ -66,14 +62,14 @@ var GetMetric = func(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	switch metricType {
-	case "gauge":
-		if v, err := store.Gauge(metricName); err != nil {
+	case metrics.GaugeName:
+		if v, err := gaugeStore.Value(metricName); err != nil {
 			rw.WriteHeader(404)
 		} else {
 			rw.Write([]byte(strconv.FormatFloat(float64(v), 'f', -1, 64)))
 		}
 	case metrics.CounterName:
-		v, err := store.Counter(metricName)
+		v, err := counterStore.Value(metricName)
 		if err != nil {
 			rw.WriteHeader(404)
 		} else {
@@ -87,8 +83,8 @@ var GetIndex = func(rw http.ResponseWriter, r *http.Request) {
 		Gauges   map[string]metrics.Gauge
 		Counters map[string]metrics.Counter
 	}{
-		store.Gauges(),
-		store.Counters(),
+		gaugeStore.Values(),
+		counterStore.Values(),
 	}
 
 	_, filename, _, _ := runtime.Caller(0)
