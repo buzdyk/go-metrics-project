@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"sync"
@@ -56,7 +57,7 @@ func (a *Agent) sync() {
 	wg.Wait()
 }
 
-func (a *Agent) Run() {
+func (a *Agent) Run(ctx context.Context) {
 	pollTicker := time.NewTicker(time.Duration(a.config.Collect) * time.Second)
 	syncTicker := time.NewTicker(time.Duration(a.config.Report) * time.Second)
 
@@ -65,6 +66,9 @@ func (a *Agent) Run() {
 
 	for {
 		select {
+		case <-ctx.Done():
+			fmt.Println("context is Done()")
+			return
 		case <-pollTicker.C:
 			go a.collect()
 		case <-syncTicker.C:

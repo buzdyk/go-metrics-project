@@ -2,6 +2,7 @@ package agent
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"github.com/buzdyk/go-metrics-project/internal/metrics"
 	"io"
@@ -172,7 +173,7 @@ func TestAgentRun(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 
-	go agent.Run()
+	go agent.Run(context.Background())
 
 	go func() {
 		defer wg.Done()

@@ -1,9 +1,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/buzdyk/go-metrics-project/internal/agent"
 	"github.com/buzdyk/go-metrics-project/internal/metrics"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 func main() {
@@ -13,8 +17,19 @@ func main() {
 
 	a := agent.NewAgent(config, collector, client)
 
-	fmt.Println("started agent")
+	ctx, cancel := context.WithCancel(context.Background())
+
+	signalCh := make(chan os.Signal, 1)
+	signal.Notify(signalCh, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		<-signalCh
+		fmt.Println("received termination signal")
+		cancel()
+	}()
+
+	fmt.Println("starting agent")
 	fmt.Println("  with config: ", config)
 
-	a.Run()
+	a.Run(ctx)
 }
