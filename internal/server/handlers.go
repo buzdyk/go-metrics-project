@@ -22,15 +22,10 @@ var StoreMetric = func(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if metricName == "unknown" {
-		rw.WriteHeader(400)
+	if metrics.Exists(r.PathValue("metric")) == false {
+		http.Error(rw, "metric does not exist", http.StatusBadRequest)
 		return
 	}
-
-	//if metrics.Exists(r.PathValue("metric")) == false {
-	//	http.Error(rw, "metric does not exist", http.StatusBadRequest)
-	//	return
-	//}
 
 	switch metricType {
 	case "gauge":
@@ -67,10 +62,10 @@ var GetMetric = func(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//if metrics.Exists(r.PathValue("metric")) == false {
-	//	http.Error(rw, "metric does not exist", http.StatusBadRequest)
-	//	return
-	//}
+	if metrics.Exists(metricName) == false {
+		http.Error(rw, "metric does not exist", http.StatusBadRequest)
+		return
+	}
 
 	switch metricType {
 	case "gauge":

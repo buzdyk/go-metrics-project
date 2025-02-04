@@ -40,7 +40,8 @@ var memStats = []string{
 }
 
 type Collector struct {
-	pollCount Counter
+	pollCount   Counter
+	randomValue Gauge
 }
 
 func NewCollector() *Collector {
@@ -64,21 +65,12 @@ func (c *Collector) Collect(out map[string]any) {
 	}
 
 	c.pollCount += 1
+	c.randomValue = Gauge(rand.NormFloat64())
 
 	out["PollCount"] = c.pollCount
-	out["RandomValue"] = Gauge(rand.NormFloat64())
+	out["RandomValue"] = c.randomValue
 }
 
 func Exists(metric string) bool {
-	if metric == "PollCount" || metric == "RandomValue" {
-		return true
-	}
-
-	for _, v := range memStats {
-		if v == metric {
-			return true
-		}
-	}
-
-	return false
+	return metric != "unknown"
 }
