@@ -21,18 +21,23 @@ var StoreMetric = func(rw http.ResponseWriter, r *http.Request) {
 	metricValue := r.PathValue("value")
 
 	// todo move this to middleware
-	if metrics.IsValidType(metricType) == false {
+	if !metrics.IsValidType(metricType) {
 		rw.WriteHeader(400)
 		return
 	}
 
-	if metrics.Exists(r.PathValue("metric")) == false {
+	if !metrics.Exists(r.PathValue("metric")) {
 		http.Error(rw, "metric does not exist", http.StatusBadRequest)
 		return
 	}
 
 	switch metricType {
 	case metrics.GaugeName:
+		v, err := strconv.ParseFloat(metricValue, 64)
+		if err != nil {
+			http.Error(rw, "metric value is not convertible to int", http.StatusBadRequest)
+		}
+		gaugeStore.Store(metricName, metrics.Gauge(v))
 	case metrics.CounterName:
 		v, err := strconv.Atoi(metricValue)
 		if err != nil {
@@ -51,12 +56,12 @@ var GetMetric = func(rw http.ResponseWriter, r *http.Request) {
 	metricType := r.PathValue("type")
 	metricName := r.PathValue("metric")
 
-	if metrics.IsValidType(metricType) == false {
+	if !metrics.IsValidType(metricType) {
 		rw.WriteHeader(400)
 		return
 	}
 
-	if metrics.Exists(metricName) == false {
+	if !metrics.Exists(metricName) {
 		http.Error(rw, "metric does not exist", http.StatusBadRequest)
 		return
 	}

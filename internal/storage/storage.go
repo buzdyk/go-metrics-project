@@ -2,9 +2,7 @@ package storage
 
 import (
 	"errors"
-	"fmt"
 	"github.com/buzdyk/go-metrics-project/internal/metrics"
-	"strconv"
 	"sync"
 )
 
@@ -21,27 +19,6 @@ type Storage[T AllowedTypes] interface {
 type MemStorage[T AllowedTypes] struct {
 	c  map[string]T
 	mu sync.RWMutex
-}
-
-func (s *MemStorage[T]) Parse(value string) (T, error) {
-	var zeroVal T
-
-	switch any(zeroVal).(type) {
-	case metrics.Gauge:
-		v, err := strconv.ParseFloat(value, 64)
-		if err != nil {
-			return 0, err
-		}
-		return T(v), nil
-	case metrics.Counter:
-		v, err := strconv.Atoi(value)
-		if err != nil {
-			return 0, err
-		}
-		return T(v), nil
-	default:
-		return zeroVal, errors.New(fmt.Sprintf("invalid type of value %T", value))
-	}
 }
 
 func (s *MemStorage[T]) Store(name string, v T) (bool, error) {
