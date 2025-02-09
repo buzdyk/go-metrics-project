@@ -11,7 +11,7 @@ import (
 	"testing"
 )
 
-func TestRealHttpClient_Post(t *testing.T) {
+func TestHTTPSyncer_SyncMetric(t *testing.T) {
 	var counter int64
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -32,7 +32,7 @@ func TestRealHttpClient_Post(t *testing.T) {
 
 	defer server.Close()
 
-	client := &RealHTTPClient{
+	syncer := &HTTPSyncer{
 		Host: server.URL,
 	}
 
@@ -41,11 +41,11 @@ func TestRealHttpClient_Post(t *testing.T) {
 		err error
 	)
 
-	r, _ = client.Post("metric", metrics.Gauge(42))
+	r, _ = syncer.SyncMetric("metric", metrics.Gauge(42))
 	r.Body.Close()
-	r, _ = client.Post("metric", metrics.Counter(42))
+	r, _ = syncer.SyncMetric("metric", metrics.Counter(42))
 	r.Body.Close()
-	r, err = client.Post("metric", int64(20))
+	r, err = syncer.SyncMetric("metric", int64(20))
 	if r != nil {
 		r.Body.Close()
 	}

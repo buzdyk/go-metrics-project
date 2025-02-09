@@ -8,8 +8,8 @@ import (
 	"time"
 )
 
-type HTTPClient interface {
-	Post(name string, value any) (*http.Response, error)
+type Syncer interface {
+	SyncMetric(name string, value any) (*http.Response, error)
 }
 
 type MetricsCollector interface {
@@ -19,7 +19,7 @@ type MetricsCollector interface {
 type Agent struct {
 	config    Config
 	collector MetricsCollector
-	client    HTTPClient
+	syncer    Syncer
 	data      map[string]interface{}
 	mu        sync.RWMutex
 }
@@ -42,7 +42,7 @@ func (a *Agent) sync() {
 		go func(id string, value any) {
 			defer wg.Done()
 
-			resp, err := a.client.Post(id, value)
+			resp, err := a.syncer.SyncMetric(id, value)
 			if err == nil {
 				defer resp.Body.Close()
 			}
@@ -77,11 +77,11 @@ func (a *Agent) Run(ctx context.Context) {
 	}
 }
 
-func NewAgent(config *Config, collector MetricsCollector, client HTTPClient) *Agent {
+func NewAgent(config *Config, collector MetricsCollector, client Syncer) *Agent {
 	return &Agent{
 		config:    *config,
 		collector: collector,
-		client:    client,
+		syncer:    client,
 		data:      make(map[string]any),
 	}
 }

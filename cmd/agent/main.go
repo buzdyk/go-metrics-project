@@ -13,7 +13,7 @@ import (
 func main() {
 	config := agent.NewConfigFromCLI()
 	collector := metrics.NewCollector()
-	client := agent.NewHTTPClient(config.Address)
+	client := agent.NewHTTPSyncer(config.Address)
 
 	a := agent.NewAgent(config, collector, client)
 

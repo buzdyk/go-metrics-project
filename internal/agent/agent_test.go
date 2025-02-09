@@ -15,12 +15,12 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-// MockHTTPClient mocks the HTTPClient interface
-type MockHTTPClient struct {
+// MockHTTPSyncer mocks the Syncer interface
+type MockHTTPSyncer struct {
 	mock.Mock
 }
 
-func (m *MockHTTPClient) Post(name string, value any) (*http.Response, error) {
+func (m *MockHTTPSyncer) SyncMetric(name string, value any) (*http.Response, error) {
 	args := m.Called(name, value)
 	resp, _ := args.Get(0).(*http.Response)
 	return resp, args.Error(1)
@@ -38,24 +38,24 @@ func (m *MockMetricsCollector) Collect(out map[string]any) {
 // TestNewAgent checks initialization
 func TestNewAgent(t *testing.T) {
 	mockCollector := new(MockMetricsCollector)
-	mockClient := new(MockHTTPClient)
+	mockSyncer := new(MockHTTPSyncer)
 	config := &Config{Address: "http://localhost:8080", Report: 10, Collect: 2}
 
-	agent := NewAgent(config, mockCollector, mockClient)
+	agent := NewAgent(config, mockCollector, mockSyncer)
 
 	assert.NotNil(t, agent)
 	assert.Equal(t, *config, agent.config)
 	assert.Equal(t, mockCollector, agent.collector)
-	assert.Equal(t, mockClient, agent.client)
+	assert.Equal(t, mockSyncer, agent.syncer)
 	assert.NotNil(t, agent.data)
 }
 
 // TestCollect ensures collect() correctly calls Collect()
 func TestAgentCollect(t *testing.T) {
 	mockCollector := new(MockMetricsCollector)
-	mockClient := new(MockHTTPClient)
+	mockSyncer := new(MockHTTPSyncer)
 	config := &Config{Address: "http://localhost:8080", Report: 10, Collect: 2}
-	agent := NewAgent(config, mockCollector, mockClient)
+	agent := NewAgent(config, mockCollector, mockSyncer)
 
 	mockCollector.On("Collect", mock.Anything).Once()
 
@@ -67,9 +67,9 @@ func TestAgentCollect(t *testing.T) {
 // TestSync ensures sync() correctly sends HTTP requests
 func TestAgentSync(t *testing.T) {
 	mockCollector := new(MockMetricsCollector)
-	mockClient := new(MockHTTPClient)
+	mockSyncer := new(MockHTTPSyncer)
 	config := &Config{Address: "http://localhost:8080", Report: 10, Collect: 2}
-	agent := NewAgent(config, mockCollector, mockClient)
+	agent := NewAgent(config, mockCollector, mockSyncer)
 
 	agent.data = map[string]any{
 		"metric1": 100,
@@ -81,21 +81,21 @@ func TestAgentSync(t *testing.T) {
 		Body:       io.NopCloser(bytes.NewBufferString("OK")),
 	}
 
-	mockClient.On("Post", "metric1", 100).Return(mockResponse, nil).Once()
-	mockClient.On("Post", "metric2", 200).Return(mockResponse, nil).Once()
+	mockSyncer.On("SyncMetric", "metric1", 100).Return(mockResponse, nil).Once()
+	mockSyncer.On("SyncMetric", "metric2", 200).Return(mockResponse, nil).Once()
 
 	agent.sync()
 
-	mockClient.AssertCalled(t, "Post", "metric1", 100)
-	mockClient.AssertCalled(t, "Post", "metric2", 200)
+	mockSyncer.AssertCalled(t, "SyncMetric", "metric1", 100)
+	mockSyncer.AssertCalled(t, "SyncMetric", "metric2", 200)
 }
 
-// TestSyncErrorHandling ensures sync() handles HTTP client errors properly
+// TestSyncErrorHandling ensures sync() handles HTTP syncer errors properly
 func TestAgentSyncWithErrors(t *testing.T) {
 	mockCollector := new(MockMetricsCollector)
-	mockClient := new(MockHTTPClient)
+	mockSyncer := new(MockHTTPSyncer)
 	config := &Config{Address: "http://localhost:8080", Report: 10, Collect: 2}
-	agent := NewAgent(config, mockCollector, mockClient)
+	agent := NewAgent(config, mockCollector, mockSyncer)
 
 	agent.data = map[string]any{
 		"metric1": 100,
@@ -107,36 +107,36 @@ func TestAgentSyncWithErrors(t *testing.T) {
 		Body:       io.NopCloser(bytes.NewBufferString("OK")),
 	}
 
-	mockClient.On("Post", "metric1", 100).Return(mockResponse, nil).Once()
-	mockClient.On("Post", "metric2", 200).Return(nil, errors.New("network error")).Once()
+	mockSyncer.On("SyncMetric", "metric1", 100).Return(mockResponse, nil).Once()
+	mockSyncer.On("SyncMetric", "metric2", 200).Return(nil, errors.New("network error")).Once()
 
 	agent.sync()
 
-	mockClient.AssertCalled(t, "Post", "metric1", 100)
-	mockClient.AssertCalled(t, "Post", "metric2", 200)
+	mockSyncer.AssertCalled(t, "SyncMetric", "metric1", 100)
+	mockSyncer.AssertCalled(t, "SyncMetric", "metric2", 200)
 }
 
 // TestSyncEmptyData ensures sync() does nothing if there are no metrics
 func TestAgentSyncWithEmptyData(t *testing.T) {
 	mockCollector := new(MockMetricsCollector)
-	mockClient := new(MockHTTPClient)
+	mockSyncer := new(MockHTTPSyncer)
 	config := &Config{Address: "http://localhost:8080", Report: 10, Collect: 2}
-	agent := NewAgent(config, mockCollector, mockClient)
+	agent := NewAgent(config, mockCollector, mockSyncer)
 
 	agent.sync()
 
-	mockClient.AssertNotCalled(t, "Post", mock.Anything, mock.Anything)
+	mockSyncer.AssertNotCalled(t, "SyncMetric", mock.Anything, mock.Anything)
 }
 
 // TestConcurrency checks collect() and sync() can run concurrently
 func TestAgentConcurrency(t *testing.T) {
 	mockCollector := new(MockMetricsCollector)
-	mockClient := new(MockHTTPClient)
+	mockSyncer := new(MockHTTPSyncer)
 	config := &Config{Address: "http://localhost:8080", Report: 10, Collect: 2}
-	agent := NewAgent(config, mockCollector, mockClient)
+	agent := NewAgent(config, mockCollector, mockSyncer)
 
 	mockCollector.On("Collect", mock.Anything).Maybe()
-	mockClient.On("Post", mock.Anything, mock.Anything).Maybe()
+	mockSyncer.On("SyncMetric", mock.Anything, mock.Anything).Maybe()
 
 	var wg sync.WaitGroup
 	wg.Add(2)
@@ -157,9 +157,9 @@ func TestAgentConcurrency(t *testing.T) {
 // TestRun ensures Run() triggers collect() and sync() at intervals
 func TestAgentRun(t *testing.T) {
 	mockCollector := new(MockMetricsCollector)
-	mockClient := new(MockHTTPClient)
+	mockSyncer := new(MockHTTPSyncer)
 	config := &Config{Address: "http://localhost:8080", Report: 1, Collect: 1}
-	agent := NewAgent(config, mockCollector, mockClient)
+	agent := NewAgent(config, mockCollector, mockSyncer)
 	agent.data["value"] = metrics.Gauge(1)
 
 	mockResponse := &http.Response{
@@ -168,7 +168,7 @@ func TestAgentRun(t *testing.T) {
 	}
 
 	mockCollector.On("Collect", mock.Anything).Maybe()
-	mockClient.On("Post", mock.Anything, mock.Anything).Maybe().Return(mockResponse, nil)
+	mockSyncer.On("SyncMetric", mock.Anything, mock.Anything).Maybe().Return(mockResponse, nil)
 
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -183,5 +183,5 @@ func TestAgentRun(t *testing.T) {
 	wg.Wait()
 
 	mockCollector.AssertNumberOfCalls(t, "Collect", 2)
-	mockClient.AssertNumberOfCalls(t, "Post", 2)
+	mockSyncer.AssertNumberOfCalls(t, "SyncMetric", 2)
 }
