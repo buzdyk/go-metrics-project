@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"github.com/buzdyk/go-metrics-project/internal/storage"
 	"github.com/go-chi/chi/v5"
 	"net/http"
 )
@@ -12,11 +13,12 @@ type Server struct {
 }
 
 func (s *Server) Run(ctx context.Context) {
-	router := chi.NewRouter()
+	handler := NewMetricHandler(storage.NewCounterMemStorage(), storage.NewGaugeMemStorage())
 
-	router.Handle("GET /", http.HandlerFunc(GetIndex))
-	router.Handle("POST /update/{type}/{metric}/{value}", http.HandlerFunc(StoreMetric))
-	router.Handle("GET /value/{type}/{metric}", http.HandlerFunc(GetMetric))
+	router := chi.NewRouter()
+	router.Handle("GET /", http.HandlerFunc(handler.GetIndex))
+	router.Handle("POST /update/{type}/{metric}/{value}", http.HandlerFunc(handler.StoreMetric))
+	router.Handle("GET /value/{type}/{metric}", http.HandlerFunc(handler.GetMetric))
 
 	server := &http.Server{
 		Addr:    s.config.Address,

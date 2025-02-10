@@ -12,15 +12,23 @@ import (
 	"strconv"
 )
 
-var counterStore = storage.NewCounterMemStorage()
-var gaugeStore = storage.NewGaugeMemStorage()
+type MetricHandler struct {
+	counterStore storage.Storage[metrics.Counter]
+	gaugeStore   storage.Storage[metrics.Gauge]
+}
 
-var StoreMetric = func(rw http.ResponseWriter, r *http.Request) {
+func NewMetricHandler(counterStore storage.Storage[metrics.Counter], gaugeStore storage.Storage[metrics.Gauge]) *MetricHandler {
+	return &MetricHandler{
+		counterStore: counterStore,
+		gaugeStore:   gaugeStore,
+	}
+}
+
+func (mh *MetricHandler) StoreMetric(rw http.ResponseWriter, r *http.Request) {
 	metricType := r.PathValue("type")
 	metricName := r.PathValue("metric")
 	metricValue := r.PathValue("value")
 
-	// todo move this to middleware
 	if !metrics.IsValidType(metricType) {
 		rw.WriteHeader(400)
 		return
@@ -37,13 +45,14 @@ var StoreMetric = func(rw http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			http.Error(rw, "metric value is not convertible to int", http.StatusBadRequest)
 		}
-		gaugeStore.Store(metricName, metrics.Gauge(v))
+		mh.gaugeStore.Store(metricName, metrics.Gauge(v))
 	case metrics.CounterName:
 		v, err := strconv.Atoi(metricValue)
 		if err != nil {
 			http.Error(rw, "metric value is not convertible to int", http.StatusBadRequest)
 		}
-		counterStore.Store(metricName, metrics.Counter(v))
+		currentValue, _ := mh.counterStore.Value(metricName)
+		mh.counterStore.Store(metricName, metrics.Counter(v)+currentValue)
 	}
 
 	log.Default().Println("type:", metricType, "metric", metricName, metricValue)
@@ -52,7 +61,7 @@ var StoreMetric = func(rw http.ResponseWriter, r *http.Request) {
 	rw.Write([]byte("ok"))
 }
 
-var GetMetric = func(rw http.ResponseWriter, r *http.Request) {
+func (mh *MetricHandler) GetMetric(rw http.ResponseWriter, r *http.Request) {
 	metricType := r.PathValue("type")
 	metricName := r.PathValue("metric")
 
@@ -68,13 +77,13 @@ var GetMetric = func(rw http.ResponseWriter, r *http.Request) {
 
 	switch metricType {
 	case metrics.GaugeName:
-		if v, err := gaugeStore.Value(metricName); err != nil {
+		if v, err := mh.gaugeStore.Value(metricName); err != nil {
 			rw.WriteHeader(404)
 		} else {
 			rw.Write([]byte(strconv.FormatFloat(float64(v), 'f', -1, 64)))
 		}
 	case metrics.CounterName:
-		v, err := counterStore.Value(metricName)
+		v, err := mh.counterStore.Value(metricName)
 		if err != nil {
 			rw.WriteHeader(404)
 		} else {
@@ -83,13 +92,13 @@ var GetMetric = func(rw http.ResponseWriter, r *http.Request) {
 	}
 }
 
-var GetIndex = func(rw http.ResponseWriter, r *http.Request) {
+func (mh *MetricHandler) GetIndex(rw http.ResponseWriter, r *http.Request) {
 	data := struct {
 		Gauges   map[string]metrics.Gauge
 		Counters map[string]metrics.Counter
 	}{
-		gaugeStore.Values(),
-		counterStore.Values(),
+		mh.gaugeStore.Values(),
+		mh.counterStore.Values(),
 	}
 
 	_, filename, _, _ := runtime.Caller(0)
@@ -106,5 +115,4 @@ var GetIndex = func(rw http.ResponseWriter, r *http.Request) {
 		fmt.Println(err)
 		http.Error(rw, "Failed to render metrics page", http.StatusInternalServerError)
 	}
-
 }

@@ -11,7 +11,7 @@ type AllowedTypes interface {
 }
 
 type Storage[T AllowedTypes] interface {
-	Store(m *T) (bool, error)
+	Store(name string, value T) (bool, error)
 	Values() map[string]T
 	Value(name string) (T, error)
 }
@@ -25,14 +25,8 @@ func (s *MemStorage[T]) Store(name string, v T) (bool, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	var zeroVal T
+	s.c[name] = v
 
-	switch any(zeroVal).(type) {
-	case metrics.Gauge:
-		s.c[name] = v
-	case metrics.Counter:
-		s.c[name] += v
-	}
 	return true, nil
 }
 
@@ -53,7 +47,7 @@ func (s *MemStorage[T]) Value(name string) (T, error) {
 	defer s.mu.RUnlock()
 
 	if v, ok := s.c[name]; !ok {
-		return 0, errors.New("unknown gauge metric:" + name)
+		return 0, errors.New("unknown metric:" + name)
 	} else {
 		return v, nil
 	}
