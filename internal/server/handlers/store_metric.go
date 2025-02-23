@@ -42,7 +42,7 @@ func (mh *MetricHandler) StoreMetric(rw http.ResponseWriter, r *http.Request) {
 	rw.Write([]byte("ok"))
 }
 
-func (mh *MetricHandler) StoreMetricJson(rw http.ResponseWriter, r *http.Request) {
+func (mh *MetricHandler) StoreMetricJSON(rw http.ResponseWriter, r *http.Request) {
 	var m metrics.Metrics
 
 	if err := json.NewDecoder(r.Body).Decode(&m); err != nil {
