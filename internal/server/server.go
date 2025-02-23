@@ -20,7 +20,9 @@ func (s *Server) Run(ctx context.Context) {
 
 	router := chi.NewRouter()
 	router.Handle("GET /", LoggingMiddleware(logger)(http.HandlerFunc(handler.GetIndex)))
-	router.Handle("POST /value/", LoggingMiddleware(logger)(http.HandlerFunc(handler.StoreMetricJSON)))
+	router.Handle("POST /update/", LoggingMiddleware(logger)(http.HandlerFunc(handler.StoreMetricJSON)))
+	router.Handle("POST /value/", LoggingMiddleware(logger)(http.HandlerFunc(handler.GetMetricJSON)))
+
 	router.Handle("POST /update/{type}/{metric}/{value}", LoggingMiddleware(logger)(http.HandlerFunc(handler.StoreMetric)))
 	router.Handle("GET /value/{type}/{metric}", LoggingMiddleware(logger)(http.HandlerFunc(handler.GetMetric)))
 
