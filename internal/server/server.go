@@ -3,8 +3,10 @@ package server
 import (
 	"context"
 	"fmt"
+	"github.com/buzdyk/go-metrics-project/internal/server/handlers"
 	"github.com/buzdyk/go-metrics-project/internal/storage"
 	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
 	"net/http"
 )
 
@@ -13,12 +15,16 @@ type Server struct {
 }
 
 func (s *Server) Run(ctx context.Context) {
-	handler := NewMetricHandler(storage.NewCounterMemStorage(), storage.NewGaugeMemStorage())
+	logger, _ := zap.NewProduction()
+	handler := handlers.NewMetricHandler(storage.NewCounterMemStorage(), storage.NewGaugeMemStorage())
 
 	router := chi.NewRouter()
-	router.Handle("GET /", http.HandlerFunc(handler.GetIndex))
-	router.Handle("POST /update/{type}/{metric}/{value}", http.HandlerFunc(handler.StoreMetric))
-	router.Handle("GET /value/{type}/{metric}", http.HandlerFunc(handler.GetMetric))
+	router.Handle("GET /", LoggingMiddleware(logger)(http.HandlerFunc(handler.GetIndex)))
+	router.Handle("POST /update/", LoggingMiddleware(logger)(http.HandlerFunc(handler.StoreMetricJSON)))
+	router.Handle("POST /value/", LoggingMiddleware(logger)(http.HandlerFunc(handler.GetMetricJSON)))
+
+	router.Handle("POST /update/{type}/{metric}/{value}", LoggingMiddleware(logger)(http.HandlerFunc(handler.StoreMetric)))
+	router.Handle("GET /value/{type}/{metric}", LoggingMiddleware(logger)(http.HandlerFunc(handler.GetMetric)))
 
 	server := &http.Server{
 		Addr:    s.config.Address,
