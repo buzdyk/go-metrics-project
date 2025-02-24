@@ -19,12 +19,12 @@ func (s *Server) Run(ctx context.Context) {
 	handler := handlers.NewMetricHandler(storage.NewCounterMemStorage(), storage.NewGaugeMemStorage())
 
 	router := chi.NewRouter()
-	router.Handle("GET /", LoggingMiddleware(logger)(http.HandlerFunc(handler.GetIndex)))
-	router.Handle("POST /update/", LoggingMiddleware(logger)(http.HandlerFunc(handler.StoreMetricJSON)))
-	router.Handle("POST /value/", LoggingMiddleware(logger)(http.HandlerFunc(handler.GetMetricJSON)))
+	router.Handle("GET /", withMiddleware(logger, handler.GetIndex))
+	router.Handle("POST /update/", withMiddleware(logger, handler.StoreMetricJSON))
+	router.Handle("POST /value/", withMiddleware(logger, handler.GetMetricJSON))
 
-	router.Handle("POST /update/{type}/{metric}/{value}", LoggingMiddleware(logger)(http.HandlerFunc(handler.StoreMetric)))
-	router.Handle("GET /value/{type}/{metric}", LoggingMiddleware(logger)(http.HandlerFunc(handler.GetMetric)))
+	router.Handle("POST /update/{type}/{metric}/{value}", withMiddleware(logger, handler.StoreMetric))
+	router.Handle("GET /value/{type}/{metric}", withMiddleware(logger, handler.GetMetric))
 
 	server := &http.Server{
 		Addr:    s.config.Address,
@@ -52,4 +52,12 @@ func NewServer(config Config) Server {
 	return Server{
 		config,
 	}
+}
+
+func withMiddleware(logger *zap.Logger, handler func(rw http.ResponseWriter, r *http.Request)) http.Handler {
+	h := handlers.DecompressRequestMiddleware()(http.HandlerFunc(handler))
+	h = handlers.CompressResponseMiddleware()(h)
+	h = handlers.LoggingMiddleware(logger)(h)
+
+	return h
 }
