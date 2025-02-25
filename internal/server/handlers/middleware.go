@@ -51,6 +51,7 @@ func LoggingMiddleware(logger *zap.Logger) func(http.Handler) http.Handler {
 				zap.Int("status", rw.statusCode),
 				zap.Int("response_size", rw.size),
 				zap.Duration("duration", duration),
+				zap.Any("body", r.Body),
 			)
 		})
 	}

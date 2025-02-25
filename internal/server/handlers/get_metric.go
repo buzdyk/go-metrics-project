@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/buzdyk/go-metrics-project/internal/metrics"
 	"net/http"
 	"strconv"
@@ -58,6 +59,7 @@ func (mh *MetricHandler) GetMetricJSON(rw http.ResponseWriter, r *http.Request) 
 
 	switch m.MType {
 	case metrics.GaugeName:
+		fmt.Println(mh.gaugeStore.Values())
 		if v, err := mh.gaugeStore.Value(m.ID); err != nil {
 			rw.WriteHeader(404)
 		} else {

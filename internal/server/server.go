@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 	"net/http"
+	"time"
 )
 
 type Server struct {
@@ -16,7 +17,23 @@ type Server struct {
 
 func (s *Server) Run(ctx context.Context) {
 	logger, _ := zap.NewProduction()
-	handler := handlers.NewMetricHandler(storage.NewCounterMemStorage(), storage.NewGaugeMemStorage())
+
+	counterStore := storage.NewCounterMemStorage()
+	gaugeStore := storage.NewGaugeMemStorage()
+
+	b := Backup{
+		s.config.FileStoragePath,
+		gaugeStore,
+		counterStore,
+	}
+
+	if s.config.Restore {
+		if err := b.Restore(); err != nil {
+			fmt.Println("backup restore error: ", err)
+		}
+	}
+
+	handler := handlers.NewMetricHandler(counterStore, gaugeStore)
 
 	router := chi.NewRouter()
 	router.Handle("GET /", withMiddleware(logger, handler.GetIndex))
@@ -38,13 +55,34 @@ func (s *Server) Run(ctx context.Context) {
 		}
 	}()
 
-	<-ctx.Done()
+	backupTicker := time.NewTicker(time.Duration(s.config.StoreInterval) * time.Second)
+	defer backupTicker.Stop()
 
-	fmt.Println("context is Done()")
-	if err := server.Shutdown(ctx); err != nil {
-		fmt.Println(err)
-	} else {
-		fmt.Println("shutdown server")
+	for {
+		select {
+		case <-ctx.Done():
+			fmt.Println("context is Done()")
+
+			if err := b.Backup(); err != nil {
+				fmt.Println("server backup error: ", err)
+			} else {
+				fmt.Println("Backed up before shutdown")
+			}
+
+			if err := server.Shutdown(ctx); err != nil {
+				fmt.Println(err)
+			} else {
+				fmt.Println("shutdown server")
+			}
+
+			return
+		case <-backupTicker.C:
+			go func() {
+				if err := b.Backup(); err != nil {
+					fmt.Print("server backup error: ", err)
+				}
+			}()
+		}
 	}
 }
 
