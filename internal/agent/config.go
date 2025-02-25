@@ -14,7 +14,11 @@ type Config struct {
 }
 
 func NewConfig() Config {
-	return Config{"0.0.0.0:8080", 10, 2}
+	return Config{
+		Address: "0.0.0.0:8080",
+		Report:  10,
+		Collect: 2,
+	}
 }
 
 func NewConfigFromCLI() *Config {

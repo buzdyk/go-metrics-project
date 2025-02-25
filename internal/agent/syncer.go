@@ -1,6 +1,8 @@
 package agent
 
 import (
+	"bytes"
+	"compress/gzip"
 	"fmt"
 	"github.com/buzdyk/go-metrics-project/internal/metrics"
 	"net/http"
@@ -46,18 +48,42 @@ func (hc *HTTPSyncer) SyncMetric(id string, value any) (*http.Response, error) {
 
 func (hc *HTTPSyncer) syncGauge(name string, g metrics.Gauge) (*http.Response, error) {
 	endpoint := fmt.Sprintf("%v/update/gauge/%v/%v", hc.Host, name, g)
-	if res, err := http.Post(endpoint, "text/plain", nil); err != nil {
+
+	var buf bytes.Buffer
+	gzipWriter := gzip.NewWriter(&buf)
+	if _, err := gzipWriter.Write([]byte{}); err != nil {
 		return nil, err
-	} else {
-		return res, nil
 	}
+	gzipWriter.Close()
+
+	req, err := http.NewRequest("POST", endpoint, &buf)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Encoding", "gzip")
+	req.Header.Set("Content-Type", "text/plain")
+
+	client := &http.Client{}
+	return client.Do(req)
 }
 
 func (hc *HTTPSyncer) syncCounter(name string, c metrics.Counter) (*http.Response, error) {
 	endpoint := fmt.Sprintf("%v/update/counter/%v/%v", hc.Host, name, c)
-	if res, err := http.Post(endpoint, "text/plain", nil); err != nil {
+
+	var buf bytes.Buffer
+	gzipWriter := gzip.NewWriter(&buf)
+	if _, err := gzipWriter.Write([]byte{}); err != nil {
 		return nil, err
-	} else {
-		return res, nil
 	}
+	gzipWriter.Close()
+
+	req, err := http.NewRequest("POST", endpoint, &buf)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Encoding", "gzip")
+	req.Header.Set("Content-Type", "text/plain")
+
+	client := &http.Client{}
+	return client.Do(req)
 }
