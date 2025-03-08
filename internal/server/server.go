@@ -50,11 +50,8 @@ func (s *Server) Run(ctx context.Context) {
 		}
 	}()
 
-	select {
-	case <-ctx.Done():
-		fmt.Println("context is Done()")
-		return
-	}
+	<-ctx.Done()
+	fmt.Println("context is Done()")
 }
 
 func NewServer(config Config) Server {
