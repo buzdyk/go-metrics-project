@@ -50,21 +50,10 @@ func (s *Server) Run(ctx context.Context) {
 		}
 	}()
 
-	//backupTicker := time.NewTicker(time.Duration(s.config.StoreInterval) * time.Second)
-	//defer backupTicker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			fmt.Println("context is Done()")
-			return
-			//case <-backupTicker.C:
-			//	go func() {
-			//		if err := b.Backup(); err != nil {
-			//			fmt.Print("server backup error: ", err)
-			//		}
-			//	}()
-		}
+	select {
+	case <-ctx.Done():
+		fmt.Println("context is Done()")
+		return
 	}
 }
 

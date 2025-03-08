@@ -26,10 +26,12 @@ func NewFileStorage[T AllowedTypes](filepath string) *FileStorage[T] {
 
 func (b *FileStorage[T]) StoreMany(m map[string]T) error {
 	data, err := b.readFile()
-
 	if err != nil {
 		return err
 	}
+
+	mu.Lock()
+	defer mu.Unlock()
 
 	var zero T
 	switch any(zero).(type) {

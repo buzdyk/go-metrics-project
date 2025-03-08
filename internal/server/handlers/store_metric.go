@@ -68,7 +68,6 @@ func (mh *MetricHandler) StoreMetricJSON(rw http.ResponseWriter, r *http.Request
 	case metrics.CounterName:
 		currentValue, _ := mh.counterStore.Value(m.ID)
 		newValue := *m.Delta + currentValue
-		fmt.Println("Storing ", m.ID, newValue)
 		mh.counterStore.Store(m.ID, newValue)
 		m.Delta = &newValue
 	}
