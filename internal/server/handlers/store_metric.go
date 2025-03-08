@@ -30,14 +30,15 @@ func (mh *MetricHandler) StoreMetric(rw http.ResponseWriter, r *http.Request) {
 			http.Error(rw, "metric value is not convertible to int", http.StatusBadRequest)
 		}
 		err = mh.gaugeStore.Store(metricName, metrics.Gauge(v))
-		fmt.Println(err)
+		fmt.Println("error storing gauge metric: ", err)
 	case metrics.CounterName:
 		v, err := strconv.Atoi(metricValue)
 		if err != nil {
 			http.Error(rw, "metric value is not convertible to int", http.StatusBadRequest)
 		}
 		currentValue, _ := mh.counterStore.Value(metricName)
-		mh.counterStore.Store(metricName, metrics.Counter(v)+currentValue)
+		err = mh.counterStore.Store(metricName, metrics.Counter(v)+currentValue)
+		fmt.Println("error storing counter metric: ", err)
 	}
 
 	rw.WriteHeader(200)
@@ -64,12 +65,14 @@ func (mh *MetricHandler) StoreMetricJSON(rw http.ResponseWriter, r *http.Request
 
 	switch m.MType {
 	case metrics.GaugeName:
-		mh.gaugeStore.Store(m.ID, *m.Value)
+		err := mh.gaugeStore.Store(m.ID, *m.Value)
+		fmt.Println("error storing gauge metric: ", err)
 	case metrics.CounterName:
 		currentValue, _ := mh.counterStore.Value(m.ID)
 		newValue := *m.Delta + currentValue
-		mh.counterStore.Store(m.ID, newValue)
+		err := mh.counterStore.Store(m.ID, newValue)
 		m.Delta = &newValue
+		fmt.Println("error storing gauge metric: ", err)
 	}
 
 	resp, _ := json.Marshal(m)
