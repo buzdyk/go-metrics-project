@@ -25,13 +25,13 @@ func NewFileStorage[T AllowedTypes](filepath string) *FileStorage[T] {
 }
 
 func (b *FileStorage[T]) StoreMany(m map[string]T) error {
+	mu.Lock()
+	defer mu.Unlock()
+
 	data, err := b.readFile()
 	if err != nil {
 		return err
 	}
-
-	mu.Lock()
-	defer mu.Unlock()
 
 	var zero T
 	switch any(zero).(type) {
@@ -61,6 +61,9 @@ func (b *FileStorage[T]) StoreMany(m map[string]T) error {
 }
 
 func (b *FileStorage[T]) Values() (map[string]T, error) {
+	mu.Lock()
+	defer mu.Unlock()
+
 	data, err := b.readFile()
 
 	if err != nil {
@@ -113,9 +116,6 @@ func (b *FileStorage[T]) Store(name string, value T) error {
 }
 
 func (b *FileStorage[T]) readFile() (map[string]FileEntry, error) {
-	mu.Lock()
-	defer mu.Unlock()
-
 	file, err := os.Open(b.filepath)
 	if err != nil {
 		return make(map[string]FileEntry), nil
