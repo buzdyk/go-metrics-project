@@ -10,7 +10,10 @@ type MetricHandler struct {
 	gaugeStore   storage.Storage[metrics.Gauge]
 }
 
-func NewMetricHandler(counterStore storage.Storage[metrics.Counter], gaugeStore storage.Storage[metrics.Gauge]) *MetricHandler {
+func NewMetricHandler(
+	counterStore storage.Storage[metrics.Counter],
+	gaugeStore storage.Storage[metrics.Gauge],
+) *MetricHandler {
 	return &MetricHandler{
 		counterStore: counterStore,
 		gaugeStore:   gaugeStore,

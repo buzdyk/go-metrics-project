@@ -10,13 +10,13 @@ import (
 )
 
 func (mh *MetricHandler) GetIndex(rw http.ResponseWriter, r *http.Request) {
+	gauges, _ := mh.gaugeStore.Values()
+	counters, _ := mh.counterStore.Values()
+
 	data := struct {
 		Gauges   map[string]metrics.Gauge
 		Counters map[string]metrics.Counter
-	}{
-		mh.gaugeStore.Values(),
-		mh.counterStore.Values(),
-	}
+	}{gauges, counters}
 
 	_, filename, _, _ := runtime.Caller(0)
 	dir := filepath.Dir(filename)

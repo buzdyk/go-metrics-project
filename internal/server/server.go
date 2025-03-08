@@ -3,12 +3,12 @@ package server
 import (
 	"context"
 	"fmt"
+	"github.com/buzdyk/go-metrics-project/internal/metrics"
 	"github.com/buzdyk/go-metrics-project/internal/server/handlers"
 	"github.com/buzdyk/go-metrics-project/internal/storage"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 	"net/http"
-	"time"
 )
 
 type Server struct {
@@ -18,22 +18,17 @@ type Server struct {
 func (s *Server) Run(ctx context.Context) {
 	logger, _ := zap.NewProduction()
 
-	counterStore := storage.NewCounterMemStorage()
-	gaugeStore := storage.NewGaugeMemStorage()
+	var handler *handlers.MetricHandler
 
-	b := Backup{
-		s.config.FileStoragePath,
-		gaugeStore,
-		counterStore,
+	if s.config.FileStoragePath != "" {
+		cs := storage.NewFileStorage[metrics.Counter](s.config.FileStoragePath)
+		gs := storage.NewFileStorage[metrics.Gauge](s.config.FileStoragePath)
+		handler = handlers.NewMetricHandler(cs, gs)
+	} else {
+		cs := storage.NewCounterMemStorage()
+		gs := storage.NewGaugeMemStorage()
+		handler = handlers.NewMetricHandler(cs, gs)
 	}
-
-	if s.config.Restore {
-		if err := b.Restore(); err != nil {
-			fmt.Println("backup restore error: ", err)
-		}
-	}
-
-	handler := handlers.NewMetricHandler(counterStore, gaugeStore)
 
 	router := chi.NewRouter()
 	router.Handle("GET /", withMiddleware(logger, handler.GetIndex))
@@ -55,33 +50,20 @@ func (s *Server) Run(ctx context.Context) {
 		}
 	}()
 
-	backupTicker := time.NewTicker(time.Duration(s.config.StoreInterval) * time.Second)
-	defer backupTicker.Stop()
+	//backupTicker := time.NewTicker(time.Duration(s.config.StoreInterval) * time.Second)
+	//defer backupTicker.Stop()
 
 	for {
 		select {
 		case <-ctx.Done():
 			fmt.Println("context is Done()")
-
-			if err := b.Backup(); err != nil {
-				fmt.Println("server backup error: ", err)
-			} else {
-				fmt.Println("Backed up before shutdown")
-			}
-
-			if err := server.Shutdown(ctx); err != nil {
-				fmt.Println(err)
-			} else {
-				fmt.Println("shutdown server")
-			}
-
 			return
-		case <-backupTicker.C:
-			go func() {
-				if err := b.Backup(); err != nil {
-					fmt.Print("server backup error: ", err)
-				}
-			}()
+			//case <-backupTicker.C:
+			//	go func() {
+			//		if err := b.Backup(); err != nil {
+			//			fmt.Print("server backup error: ", err)
+			//		}
+			//	}()
 		}
 	}
 }

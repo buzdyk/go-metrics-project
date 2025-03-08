@@ -29,7 +29,8 @@ func (mh *MetricHandler) StoreMetric(rw http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			http.Error(rw, "metric value is not convertible to int", http.StatusBadRequest)
 		}
-		mh.gaugeStore.Store(metricName, metrics.Gauge(v))
+		err = mh.gaugeStore.Store(metricName, metrics.Gauge(v))
+		fmt.Println(err)
 	case metrics.CounterName:
 		v, err := strconv.Atoi(metricValue)
 		if err != nil {
