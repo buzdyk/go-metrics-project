@@ -92,6 +92,9 @@ func (b *FileStorage[T]) Values() (map[string]T, error) {
 }
 
 func (b *FileStorage[T]) Value(name string) (T, error) {
+	mu.Lock()
+	defer mu.Unlock()
+
 	var zero T
 
 	data, err := b.Values()
