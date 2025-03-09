@@ -77,7 +77,11 @@ func setupMux(cfg *config.Config) *chi.Mux {
 }
 
 func getStorage(cfg *config.Config) (storage.Storage[metrics.Counter], storage.Storage[metrics.Gauge]) {
-	if cfg.FileStoragePath != "" {
+	if cfg.PgDsn != "" {
+		cs := storage.NewPgStorage[metrics.Counter](database.GetClient())
+		gs := storage.NewPgStorage[metrics.Gauge](database.GetClient())
+		return cs, gs
+	} else if cfg.FileStoragePath != "" {
 		cs := storage.NewFileStorage[metrics.Counter](cfg.FileStoragePath)
 		gs := storage.NewFileStorage[metrics.Gauge](cfg.FileStoragePath)
 		return cs, gs

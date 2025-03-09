@@ -29,28 +29,36 @@ func GetClient() *Client {
 	return instance
 }
 
-func (pg *Client) RunMigrations() error {
-	fmt.Println(pg.dsn)
-	pgsql, err := sql.Open("postgres", pg.dsn)
+func (pg *Client) DB() (*sql.DB, error) {
+	db, err := sql.Open("postgres", pg.dsn)
+
 	if err != nil {
-		fmt.Println("1")
+		return nil, err
+	}
+
+	return db, nil
+}
+
+func (pg *Client) RunMigrations() error {
+	db, err := pg.DB()
+
+	if err != nil {
 		return err
 	}
-	defer pgsql.Close()
+	defer db.Close()
 
 	cfg := &postgres.Config{}
 
-	db, err := postgres.WithInstance(pgsql, cfg)
+	driver, err := postgres.WithInstance(db, cfg)
 
 	if err != nil {
-		fmt.Println("2")
 		return err
 	}
 
 	m, err := migrate.NewWithDatabaseInstance(
 		"file://internal/database/migrations",
 		"postgres",
-		db,
+		driver,
 	)
 
 	if err != nil {
