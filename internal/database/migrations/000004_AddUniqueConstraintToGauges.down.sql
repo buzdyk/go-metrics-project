@@ -1,0 +1,1 @@
+ALTER TABLE gauges DROP CONSTRAINT unique_gauge_name;

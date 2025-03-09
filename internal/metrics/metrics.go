@@ -12,7 +12,7 @@ type Counter uint64
 const GaugeName = "gauge"
 const CounterName = "counter"
 
-type Metrics struct {
+type Metric struct {
 	ID    string   `json:"id"`              // metric name
 	MType string   `json:"type"`            // counter or gauge
 	Delta *Counter `json:"delta,omitempty"` // value for counter

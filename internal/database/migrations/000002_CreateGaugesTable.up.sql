@@ -1,0 +1,5 @@
+CREATE TABLE gauges (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    value DOUBLE PRECISION NOT NULL
+);

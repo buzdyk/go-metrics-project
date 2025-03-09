@@ -2,7 +2,7 @@ package agent
 
 import (
 	"bytes"
-	"compress/gzip"
+	"encoding/json"
 	"fmt"
 	"github.com/buzdyk/go-metrics-project/internal/metrics"
 	"net/http"
@@ -49,14 +49,7 @@ func (hc *HTTPSyncer) SyncMetric(id string, value any) (*http.Response, error) {
 func (hc *HTTPSyncer) syncGauge(name string, g metrics.Gauge) (*http.Response, error) {
 	endpoint := fmt.Sprintf("%v/update/gauge/%v/%v", hc.Host, name, g)
 
-	var buf bytes.Buffer
-	gzipWriter := gzip.NewWriter(&buf)
-	if _, err := gzipWriter.Write([]byte{}); err != nil {
-		return nil, err
-	}
-	gzipWriter.Close()
-
-	req, err := http.NewRequest("POST", endpoint, &buf)
+	req, err := http.NewRequest("POST", endpoint, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -70,14 +63,7 @@ func (hc *HTTPSyncer) syncGauge(name string, g metrics.Gauge) (*http.Response, e
 func (hc *HTTPSyncer) syncCounter(name string, c metrics.Counter) (*http.Response, error) {
 	endpoint := fmt.Sprintf("%v/update/counter/%v/%v", hc.Host, name, c)
 
-	var buf bytes.Buffer
-	gzipWriter := gzip.NewWriter(&buf)
-	if _, err := gzipWriter.Write([]byte{}); err != nil {
-		return nil, err
-	}
-	gzipWriter.Close()
-
-	req, err := http.NewRequest("POST", endpoint, &buf)
+	req, err := http.NewRequest("POST", endpoint, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -85,5 +71,32 @@ func (hc *HTTPSyncer) syncCounter(name string, c metrics.Counter) (*http.Respons
 	req.Header.Set("Content-Type", "text/plain")
 
 	client := &http.Client{}
+	return client.Do(req)
+}
+
+func (hc *HTTPSyncer) SyncMetrics(ms []metrics.Metric) (*http.Response, error) {
+	endpoint := fmt.Sprintf("%v/updates/", hc.Host)
+
+	jsonData, err := json.Marshal(ms)
+	if err != nil {
+		return nil, err
+	}
+
+	client := &http.Client{}
+	var buf bytes.Buffer
+
+	//gzipWriter := gzip.NewWriter(&buf)
+	if _, err := buf.Write(jsonData); err != nil {
+		return nil, err
+	}
+	//defer gzipWriter.Close()
+	fmt.Println(buf)
+	req, err := http.NewRequest("POST", endpoint, &buf)
+	if err != nil {
+		return nil, err
+	}
+	//req.Header.Set("Content-Encoding", "gzip")
+	req.Header.Set("Content-Type", "application/json")
+
 	return client.Do(req)
 }

@@ -1,0 +1,1 @@
+ALTER TABLE counters ADD CONSTRAINT unique_counter_name UNIQUE (name);

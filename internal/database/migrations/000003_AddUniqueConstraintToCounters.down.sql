@@ -1,0 +1,1 @@
+ALTER TABLE counters DROP CONSTRAINT unique_counter_name;

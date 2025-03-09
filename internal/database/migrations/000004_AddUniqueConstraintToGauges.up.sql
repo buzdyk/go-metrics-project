@@ -1,0 +1,1 @@
+ALTER TABLE gauges ADD CONSTRAINT unique_gauge_name UNIQUE (name);
