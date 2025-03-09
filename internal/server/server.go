@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/buzdyk/go-metrics-project/internal/metrics"
+	"github.com/buzdyk/go-metrics-project/internal/server/config"
 	"github.com/buzdyk/go-metrics-project/internal/server/handlers"
 	"github.com/buzdyk/go-metrics-project/internal/storage"
 	"github.com/go-chi/chi/v5"
@@ -11,18 +12,17 @@ import (
 	"net/http"
 )
 
-type Server struct {
-	config Config
-}
+type Server struct{}
 
 func (s *Server) Run(ctx context.Context) {
 	logger, _ := zap.NewProduction()
+	cfg := config.GetConfig()
 
 	var handler *handlers.MetricHandler
 
-	if s.config.FileStoragePath != "" {
-		cs := storage.NewFileStorage[metrics.Counter](s.config.FileStoragePath)
-		gs := storage.NewFileStorage[metrics.Gauge](s.config.FileStoragePath)
+	if cfg.FileStoragePath != "" {
+		cs := storage.NewFileStorage[metrics.Counter](cfg.FileStoragePath)
+		gs := storage.NewFileStorage[metrics.Gauge](cfg.FileStoragePath)
 		handler = handlers.NewMetricHandler(cs, gs)
 	} else {
 		cs := storage.NewCounterMemStorage()
@@ -32,6 +32,7 @@ func (s *Server) Run(ctx context.Context) {
 
 	router := chi.NewRouter()
 	router.Handle("GET /", withMiddleware(logger, handler.GetIndex))
+	router.Handle("GET /ping", withMiddleware(logger, handler.Ping))
 	router.Handle("POST /update/", withMiddleware(logger, handler.StoreMetricJSON))
 	router.Handle("POST /value/", withMiddleware(logger, handler.GetMetricJSON))
 
@@ -39,12 +40,12 @@ func (s *Server) Run(ctx context.Context) {
 	router.Handle("GET /value/{type}/{metric}", withMiddleware(logger, handler.GetMetric))
 
 	server := &http.Server{
-		Addr:    s.config.Address,
+		Addr:    cfg.Address,
 		Handler: router,
 	}
 
 	go func() {
-		fmt.Println("Started metrics server on", s.config.Address)
+		fmt.Println("Started metrics server on", cfg.Address)
 		if err := server.ListenAndServe(); err != nil {
 			fmt.Println(err)
 		}
@@ -54,10 +55,8 @@ func (s *Server) Run(ctx context.Context) {
 	fmt.Println("context is Done()")
 }
 
-func NewServer(config Config) Server {
-	return Server{
-		config,
-	}
+func NewServer() Server {
+	return Server{}
 }
 
 func withMiddleware(logger *zap.Logger, handler func(rw http.ResponseWriter, r *http.Request)) http.Handler {
