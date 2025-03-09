@@ -8,15 +8,15 @@ import (
 	"sync"
 )
 
-var mu sync.Mutex
-
 type PgStorage[T AllowedTypes] struct {
 	client *database.Client
 }
 
+var mu2 *sync.Mutex
+
 func (s *PgStorage[T]) Store(name string, v T) error {
-	mu.Lock()
-	defer mu.Unlock()
+	mu2.Lock()
+	defer mu2.Unlock()
 
 	db, err := s.client.DB()
 	if err != nil {
@@ -29,8 +29,8 @@ func (s *PgStorage[T]) Store(name string, v T) error {
 }
 
 func (s *PgStorage[T]) StoreMany(m map[string]T) error {
-	mu.Lock()
-	defer mu.Unlock()
+	mu2.Lock()
+	defer mu2.Unlock()
 
 	db, err := s.client.DB()
 	if err != nil {
