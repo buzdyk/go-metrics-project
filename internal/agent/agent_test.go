@@ -26,7 +26,7 @@ func (m *MockHTTPSyncer) SyncMetric(name string, value any) (*http.Response, err
 	return resp, args.Error(1)
 }
 
-func (m *MockHTTPSyncer) SyncMetrics(ms []metrics.Metric) (*http.Respone, error) {
+func (m *MockHTTPSyncer) SyncMetrics(ms []metrics.Metric) (*http.Response, error) {
 	args := m.Called("SyncMetrics", ms)
 	resp, _ := args.Get(0).(*http.Response)
 	return resp, args.Error(1)
