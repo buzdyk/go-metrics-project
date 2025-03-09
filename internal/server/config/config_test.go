@@ -1,4 +1,4 @@
-package server
+package config
 
 import (
 	"flag"
@@ -10,7 +10,7 @@ import (
 
 // TestNewConfig ensures the default config is correctly initialized
 func TestNewConfig(t *testing.T) {
-	config := NewConfig()
+	config := GetConfig()
 
 	assert.Equal(t, "0.0.0.0:8080", config.Address, "Default address should be 0.0.0.0:8080")
 }
@@ -20,7 +20,7 @@ func TestNewConfigFromCLI_Defaults(t *testing.T) {
 	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
 
 	os.Args = []string{"cmd", "-a", "127.0.0.1:9000"}
-	config := NewConfigFromCLI()
+	config := GetConfig()
 
 	assert.Equal(t, "127.0.0.1:9000", config.Address, "CLI flag should override default address")
 }
@@ -33,7 +33,7 @@ func TestNewConfigFromCLI_EnvVariable(t *testing.T) {
 	defer os.Clearenv() // Clean up after test
 
 	os.Args = []string{"cmd", "-a", "127.0.0.1:9000"}
-	config := NewConfigFromCLI()
+	config := GetConfig()
 
 	assert.Equal(t, "192.168.1.100:9090", config.Address, "Environment variable should override CLI flag")
 }
@@ -46,7 +46,7 @@ func TestNewConfigFromCLI_EnvVariable_Only(t *testing.T) {
 	defer os.Clearenv()
 
 	os.Args = []string{"cmd"}
-	config := NewConfigFromCLI()
+	config := GetConfig()
 
 	assert.Equal(t, "192.168.1.200:9091", config.Address, "Environment variable should be used if no CLI flag is set")
 }
@@ -58,7 +58,7 @@ func TestNewConfigFromCLI_NoArgs(t *testing.T) {
 	os.Clearenv()
 
 	os.Args = []string{"cmd"}
-	config := NewConfigFromCLI()
+	config := GetConfig()
 
 	assert.Equal(t, "0.0.0.0:8080", config.Address, "Default config should be used if no flags or env vars are set")
 }
