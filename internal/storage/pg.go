@@ -12,7 +12,7 @@ type PgStorage[T AllowedTypes] struct {
 	client *database.Client
 }
 
-var mu2 *sync.Mutex
+var mu2 sync.Mutex
 
 func (s *PgStorage[T]) Store(name string, v T) error {
 	mu2.Lock()
