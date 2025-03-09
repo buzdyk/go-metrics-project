@@ -51,3 +51,9 @@ func GetConfig() *Config {
 
 	return instance
 }
+
+// helper for tests
+func resetConfig() {
+	instance = nil
+	once = sync.Once{}
+}
