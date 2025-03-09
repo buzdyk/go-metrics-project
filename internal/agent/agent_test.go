@@ -21,7 +21,13 @@ type MockHTTPSyncer struct {
 }
 
 func (m *MockHTTPSyncer) SyncMetric(name string, value any) (*http.Response, error) {
-	args := m.Called(name, value)
+	args := m.Called("SyncMetric", name, value)
+	resp, _ := args.Get(0).(*http.Response)
+	return resp, args.Error(1)
+}
+
+func (m *MockHTTPSyncer) SyncMetrics(ms []metrics.Metric) (*http.Respone, error) {
+	args := m.Called("SyncMetrics", ms)
 	resp, _ := args.Get(0).(*http.Response)
 	return resp, args.Error(1)
 }
