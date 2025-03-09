@@ -65,7 +65,8 @@ func (a *Agent) sync() {
 
 	res, err := a.syncer.SyncMetrics(data)
 	if err != nil {
-		return err
+		fmt.Println(err)
+		return
 	}
 	defer res.Body.Close()
 
