@@ -3,6 +3,7 @@ package agent
 import (
 	"context"
 	"fmt"
+	"github.com/buzdyk/go-metrics-project/internal/metrics"
 	"net/http"
 	"sync"
 	"time"
@@ -10,6 +11,7 @@ import (
 
 type Syncer interface {
 	SyncMetric(name string, value any) (*http.Response, error)
+	SyncMetrics([]metrics.Metric) (*http.Response, error)
 }
 
 type MetricsCollector interface {
@@ -38,23 +40,28 @@ func (a *Agent) sync() {
 	var wg sync.WaitGroup
 	wg.Add(len(a.data))
 
+	var data []metrics.Metric
+
 	for id, value := range a.data {
-		go func(id string, value any) {
-			defer wg.Done()
-
-			resp, err := a.syncer.SyncMetric(id, value)
-			if err == nil {
-				defer resp.Body.Close()
-			}
-
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-		}(id, value)
+		switch v := value.(type) {
+		case metrics.Gauge:
+			data = append(data, metrics.Metric{
+				ID:    id,
+				MType: metrics.GaugeName,
+				Value: v,
+			})
+		case metrics.Counter:
+			data = append(data, metrics.Metric{
+				ID:    id,
+				MType: metrics.CounterName,
+				Delta: v,
+			})
+		}
 	}
 
-	wg.Wait()
+	if len(data) > 0 {
+		a.syncer.SyncMetrics(data)
+	}
 }
 
 func (a *Agent) Run(ctx context.Context) {

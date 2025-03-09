@@ -39,7 +39,7 @@ func (mh *MetricHandler) GetMetric(rw http.ResponseWriter, r *http.Request) {
 }
 
 func (mh *MetricHandler) GetMetricJSON(rw http.ResponseWriter, r *http.Request) {
-	var m metrics.Metrics
+	var m metrics.Metric
 
 	if err := json.NewDecoder(r.Body).Decode(&m); err != nil {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
@@ -61,7 +61,7 @@ func (mh *MetricHandler) GetMetricJSON(rw http.ResponseWriter, r *http.Request) 
 		if v, err := mh.gaugeStore.Value(m.ID); err != nil {
 			rw.WriteHeader(404)
 		} else {
-			m.Value = &v
+			m.Value = v
 			resp, _ := json.Marshal(m)
 			rw.Header().Set("Content-Type", "application/json")
 			rw.Write(resp)
@@ -72,7 +72,7 @@ func (mh *MetricHandler) GetMetricJSON(rw http.ResponseWriter, r *http.Request) 
 			rw.WriteHeader(404)
 		} else {
 			rw.Header().Set("Content-Type", "application/json")
-			m.Delta = &v
+			m.Delta = v
 			resp, _ := json.Marshal(m)
 			rw.Write(resp)
 		}
