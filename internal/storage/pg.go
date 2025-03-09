@@ -5,13 +5,19 @@ import (
 	"errors"
 	"github.com/buzdyk/go-metrics-project/internal/database"
 	"github.com/buzdyk/go-metrics-project/internal/metrics"
+	"sync"
 )
+
+var mu sync.Mutex
 
 type PgStorage[T AllowedTypes] struct {
 	client *database.Client
 }
 
 func (s *PgStorage[T]) Store(name string, v T) error {
+	mu.Lock()
+	defer mu.Unlock()
+
 	db, err := s.client.DB()
 	if err != nil {
 		return err
@@ -23,6 +29,9 @@ func (s *PgStorage[T]) Store(name string, v T) error {
 }
 
 func (s *PgStorage[T]) StoreMany(m map[string]T) error {
+	mu.Lock()
+	defer mu.Unlock()
+
 	db, err := s.client.DB()
 	if err != nil {
 		return err

@@ -64,12 +64,13 @@ func (a *Agent) sync() {
 	}
 
 	res, err := a.syncer.SyncMetrics(data)
+	defer res.Body.Close()
+
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-
-	fmt.Println(res.StatusCode, res.Body)
+	defer fmt.Println(res.StatusCode, res.Body)
 }
 
 func (a *Agent) Run(ctx context.Context) {
