@@ -48,13 +48,13 @@ func (a *Agent) sync() {
 			data = append(data, metrics.Metric{
 				ID:    id,
 				MType: metrics.GaugeName,
-				Value: v,
+				Value: &v,
 			})
 		case metrics.Counter:
 			data = append(data, metrics.Metric{
 				ID:    id,
 				MType: metrics.CounterName,
-				Delta: v,
+				Delta: &v,
 			})
 		}
 	}

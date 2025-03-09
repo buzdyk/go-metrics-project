@@ -65,13 +65,13 @@ func (mh *MetricHandler) StoreMetricJSON(rw http.ResponseWriter, r *http.Request
 
 	switch m.MType {
 	case metrics.GaugeName:
-		err := mh.gaugeStore.Store(m.ID, m.Value)
+		err := mh.gaugeStore.Store(m.ID, *m.Value)
 		fmt.Println("error storing gauge metric: ", err)
 	case metrics.CounterName:
 		currentValue, _ := mh.counterStore.Value(m.ID)
-		newValue := m.Delta + currentValue
+		newValue := *m.Delta + currentValue
 		err := mh.counterStore.Store(m.ID, newValue)
-		m.Delta = newValue
+		m.Delta = &newValue
 		fmt.Println("error storing gauge metric: ", err)
 	}
 
@@ -108,10 +108,10 @@ func (mh *MetricHandler) Updates(rw http.ResponseWriter, r *http.Request) {
 	for _, metric := range data {
 		switch metric.MType {
 		case metrics.GaugeName:
-			gauges[metric.ID] = metric.Value
+			gauges[metric.ID] = *metric.Value
 		case metrics.CounterName:
 			currentValue, _ := mh.counterStore.Value(metric.ID)
-			newValue := metric.Delta + currentValue
+			newValue := *metric.Delta + currentValue
 			counters[metric.ID] = newValue
 		}
 	}

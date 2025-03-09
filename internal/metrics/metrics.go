@@ -13,10 +13,10 @@ const GaugeName = "gauge"
 const CounterName = "counter"
 
 type Metric struct {
-	ID    string  `json:"id"`              // metric name
-	MType string  `json:"type"`            // counter or gauge
-	Delta Counter `json:"delta,omitempty"` // value for counter
-	Value Gauge   `json:"value,omitempty"` // value for gauge
+	ID    string   `json:"id"`              // metric name
+	MType string   `json:"type"`            // counter or gauge
+	Delta *Counter `json:"delta,omitempty"` // value for counter
+	Value *Gauge   `json:"value,omitempty"` // value for gauge
 }
 
 var memStats = []string{
