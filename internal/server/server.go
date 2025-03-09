@@ -68,6 +68,7 @@ func setupMux(cfg *config.Config) *chi.Mux {
 	mux.Handle("GET /", withMiddleware(logger, handler.GetIndex))
 	mux.Handle("GET /ping", withMiddleware(logger, handler.Ping))
 	mux.Handle("POST /update/", withMiddleware(logger, handler.StoreMetricJSON))
+	mux.Handle("POST /updates/", withMiddleware(logger, handler.Updates))
 	mux.Handle("POST /value/", withMiddleware(logger, handler.GetMetricJSON))
 
 	mux.Handle("POST /update/{type}/{metric}/{value}", withMiddleware(logger, handler.StoreMetric))

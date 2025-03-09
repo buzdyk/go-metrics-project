@@ -59,9 +59,17 @@ func (a *Agent) sync() {
 		}
 	}
 
-	if len(data) > 0 {
-		a.syncer.SyncMetrics(data)
+	if len(data) == 0 {
+		return
 	}
+
+	res, err := a.syncer.SyncMetrics(data)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	fmt.Println(res.StatusCode, res.Body)
 }
 
 func (a *Agent) Run(ctx context.Context) {

@@ -2,7 +2,6 @@ package agent
 
 import (
 	"bytes"
-	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"github.com/buzdyk/go-metrics-project/internal/metrics"
@@ -86,17 +85,17 @@ func (hc *HTTPSyncer) SyncMetrics(ms []metrics.Metric) (*http.Response, error) {
 	client := &http.Client{}
 	var buf bytes.Buffer
 
-	gzipWriter := gzip.NewWriter(&buf)
-	if _, err := gzipWriter.Write(jsonData); err != nil {
+	//gzipWriter := gzip.NewWriter(&buf)
+	if _, err := buf.Write(jsonData); err != nil {
 		return nil, err
 	}
-	defer gzipWriter.Close()
-
+	//defer gzipWriter.Close()
+	fmt.Println(buf)
 	req, err := http.NewRequest("POST", endpoint, &buf)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Content-Encoding", "gzip")
+	//req.Header.Set("Content-Encoding", "gzip")
 	req.Header.Set("Content-Type", "application/json")
 
 	return client.Do(req)
