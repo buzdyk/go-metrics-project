@@ -103,7 +103,7 @@ func (mh *MetricHandler) Updates(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	gauges := make(map[string]metrics.Gauge)
-	counters := make(map[string]metrics.Counter)
+	//counters := make(map[string]metrics.Counter)
 
 	for _, metric := range data {
 		switch metric.MType {
@@ -112,7 +112,8 @@ func (mh *MetricHandler) Updates(rw http.ResponseWriter, r *http.Request) {
 		case metrics.CounterName:
 			currentValue, _ := mh.counterStore.Value(metric.ID)
 			newValue := *metric.Delta + currentValue
-			counters[metric.ID] = newValue
+			mh.counterStore.Store(metric.ID, newValue)
+			//counters[metric.ID] = newValue
 		}
 	}
 
@@ -121,10 +122,10 @@ func (mh *MetricHandler) Updates(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := mh.counterStore.StoreMany(counters); err != nil {
-		http.Error(rw, err.Error(), http.StatusBadRequest)
-		return
-	}
+	//if err := mh.counterStore.StoreMany(counters); err != nil {
+	//	http.Error(rw, err.Error(), http.StatusBadRequest)
+	//	return
+	//}
 
 	rw.WriteHeader(200)
 	rw.Header().Set("Content-Type", "application/json")
