@@ -61,7 +61,7 @@ func (s *PgStorage[T]) StoreMany(m map[string]T) error {
 
 func (s *PgStorage[T]) Values() (map[string]T, error) {
 	mu2.Lock()
-	mu2.Unlock()
+	defer mu2.Unlock()
 
 	db, err := s.client.DB()
 	if err != nil {
@@ -90,7 +90,7 @@ func (s *PgStorage[T]) Values() (map[string]T, error) {
 
 func (s *PgStorage[T]) Value(name string) (T, error) {
 	mu2.Lock()
-	mu2.Unlock()
+	defer mu2.Unlock()
 
 	db, err := s.client.DB()
 	if err != nil {

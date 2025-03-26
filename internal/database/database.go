@@ -62,11 +62,11 @@ func (pg *Client) RunMigrations() error {
 	)
 
 	if err != nil {
-		return errors.New(fmt.Sprintf("Failed to create migration instance: %v", err))
+		return fmt.Errorf("Failed to create migration instance: %v", err)
 	}
 
 	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
-		return errors.New(fmt.Sprintf("Migration failed: %v", err))
+		return fmt.Errorf("Migration failed: %v", err)
 	}
 
 	return nil
