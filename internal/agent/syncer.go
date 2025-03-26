@@ -90,7 +90,6 @@ func (hc *HTTPSyncer) SyncMetrics(ms []metrics.Metric) (*http.Response, error) {
 		return nil, err
 	}
 	//defer gzipWriter.Close()
-	fmt.Println(buf)
 	req, err := http.NewRequest("POST", endpoint, &buf)
 	if err != nil {
 		return nil, err

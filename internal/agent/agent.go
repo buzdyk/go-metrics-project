@@ -37,9 +37,6 @@ func (a *Agent) sync() {
 	a.mu.RLock()
 	defer a.mu.RUnlock()
 
-	var wg sync.WaitGroup
-	wg.Add(len(a.data))
-
 	var data []metrics.Metric
 
 	for id, value := range a.data {
@@ -63,18 +60,37 @@ func (a *Agent) sync() {
 		return
 	}
 
-	res, err := a.syncer.SyncMetrics(data)
-	if err != nil {
-		fmt.Println(err)
-		return
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	
+	retryBackoffs := []time.Duration{1, 3, 5} // seconds
+	
+	for attempt := 0; attempt <= len(retryBackoffs); attempt++ {
+		if attempt > 0 {
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(retryBackoffs[attempt-1] * time.Second):
+			}
+		}
+		
+		res, err := a.syncer.SyncMetrics(data)
+		if err == nil && res.StatusCode < 500 {
+			defer res.Body.Close()
+			return
+		}
+		
+		if err != nil {
+			fmt.Printf("Attempt %d failed: %v\n", attempt+1, err)
+		} else {
+			fmt.Printf("Attempt %d failed with status: %d\n", attempt+1, res.StatusCode)
+			res.Body.Close()
+		}
+		
+		if attempt == len(retryBackoffs) {
+			fmt.Println("All retry attempts failed")
+		}
 	}
-	defer res.Body.Close()
-
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	defer fmt.Println(res.StatusCode, res.Body)
 }
 
 func (a *Agent) Run(ctx context.Context) {
