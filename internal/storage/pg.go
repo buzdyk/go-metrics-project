@@ -7,18 +7,13 @@ import (
 	"fmt"
 	"github.com/buzdyk/go-metrics-project/internal/database"
 	"github.com/buzdyk/go-metrics-project/internal/metrics"
-	"sync"
 )
 
 type PgStorage[T AllowedTypes] struct {
 	client *database.Client
 }
 
-var mu2 sync.Mutex
-
 func (s *PgStorage[T]) Store(ctx context.Context, name string, v T) error {
-	mu2.Lock()
-	defer mu2.Unlock()
 
 	db, err := s.client.DB()
 	if err != nil {
@@ -32,8 +27,6 @@ func (s *PgStorage[T]) Store(ctx context.Context, name string, v T) error {
 }
 
 func (s *PgStorage[T]) StoreMany(ctx context.Context, m map[string]T) error {
-	mu2.Lock()
-	defer mu2.Unlock()
 
 	db, err := s.client.DB()
 	if err != nil {
@@ -64,8 +57,6 @@ func (s *PgStorage[T]) StoreMany(ctx context.Context, m map[string]T) error {
 }
 
 func (s *PgStorage[T]) Values(ctx context.Context) (map[string]T, error) {
-	mu2.Lock()
-	defer mu2.Unlock()
 
 	db, err := s.client.DB()
 	if err != nil {
@@ -94,8 +85,6 @@ func (s *PgStorage[T]) Values(ctx context.Context) (map[string]T, error) {
 }
 
 func (s *PgStorage[T]) Value(ctx context.Context, name string) (T, error) {
-	mu2.Lock()
-	defer mu2.Unlock()
 
 	db, err := s.client.DB()
 	if err != nil {
