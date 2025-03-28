@@ -1,6 +1,7 @@
 package database
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -37,6 +38,21 @@ func (pg *Client) DB() (*sql.DB, error) {
 	}
 
 	return db, nil
+}
+
+func (pg *Client) Ping() error {
+	ctx := context.Background()
+	return pg.PingContext(ctx)
+}
+
+func (pg *Client) PingContext(ctx context.Context) error {
+	db, err := pg.DB()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	return db.PingContext(ctx)
 }
 
 func (pg *Client) RunMigrations() error {

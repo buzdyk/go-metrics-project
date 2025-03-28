@@ -27,7 +27,7 @@ func (mh *MetricHandler) GetMetricJSON(rw http.ResponseWriter, r *http.Request) 
 
 	switch m.MType {
 	case metrics.GaugeName:
-		if v, err := mh.gaugeStore.Value(m.ID); err != nil {
+		if v, err := mh.gaugeStore.Value(r.Context(), m.ID); err != nil {
 			fmt.Println(err)
 			rw.WriteHeader(404)
 		} else {
@@ -37,7 +37,7 @@ func (mh *MetricHandler) GetMetricJSON(rw http.ResponseWriter, r *http.Request) 
 			rw.Write(resp)
 		}
 	case metrics.CounterName:
-		v, err := mh.counterStore.Value(m.ID)
+		v, err := mh.counterStore.Value(r.Context(), m.ID)
 		if err != nil {
 			fmt.Println(err)
 			rw.WriteHeader(404)

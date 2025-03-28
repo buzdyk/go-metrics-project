@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"errors"
 	"github.com/buzdyk/go-metrics-project/internal/metrics"
 	"sync"
@@ -11,7 +12,7 @@ type MemStorage[T AllowedTypes] struct {
 	mu sync.RWMutex
 }
 
-func (s *MemStorage[T]) Store(name string, v T) error {
+func (s *MemStorage[T]) Store(ctx context.Context, name string, v T) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -20,7 +21,7 @@ func (s *MemStorage[T]) Store(name string, v T) error {
 	return nil
 }
 
-func (s *MemStorage[T]) StoreMany(m map[string]T) error {
+func (s *MemStorage[T]) StoreMany(ctx context.Context, m map[string]T) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -31,7 +32,7 @@ func (s *MemStorage[T]) StoreMany(m map[string]T) error {
 	return nil
 }
 
-func (s *MemStorage[T]) Values() (map[string]T, error) {
+func (s *MemStorage[T]) Values(ctx context.Context) (map[string]T, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -43,7 +44,7 @@ func (s *MemStorage[T]) Values() (map[string]T, error) {
 	return m, nil
 }
 
-func (s *MemStorage[T]) Value(name string) (T, error) {
+func (s *MemStorage[T]) Value(ctx context.Context, name string) (T, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 

@@ -10,8 +10,8 @@ import (
 )
 
 func (mh *MetricHandler) GetIndex(rw http.ResponseWriter, r *http.Request) {
-	gauges, _ := mh.gaugeStore.Values()
-	counters, _ := mh.counterStore.Values()
+	gauges, _ := mh.gaugeStore.Values(r.Context())
+	counters, _ := mh.counterStore.Values(r.Context())
 
 	data := struct {
 		Gauges   map[string]metrics.Gauge

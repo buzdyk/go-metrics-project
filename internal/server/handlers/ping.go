@@ -1,23 +1,15 @@
 package handlers
 
 import (
-	"database/sql"
-	"github.com/buzdyk/go-metrics-project/internal/server/config"
+	"github.com/buzdyk/go-metrics-project/internal/database"
 	_ "github.com/lib/pq"
 	"net/http"
 )
 
 func (mh *MetricHandler) Ping(rw http.ResponseWriter, r *http.Request) {
-	dsn := config.GetConfig().PgDsn
+	dbClient := database.GetClient()
 
-	db, err := sql.Open("postgres", dsn)
-	if err != nil {
-		http.Error(rw, "failed to connect to database", http.StatusInternalServerError)
-		return
-	}
-	defer db.Close()
-
-	if err := db.Ping(); err != nil {
+	if err := dbClient.Ping(); err != nil {
 		http.Error(rw, "database ping failed", http.StatusInternalServerError)
 		return
 	}

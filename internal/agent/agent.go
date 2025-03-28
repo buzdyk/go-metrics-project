@@ -60,17 +60,17 @@ func (a *Agent) sync() {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(a.config.RequestTimeout)*time.Second)
 	defer cancel()
 	
-	retryBackoffs := []time.Duration{1, 3, 5} // seconds
+	retryBackoffs := a.config.RetryBackoffs
 	
 	for attempt := 0; attempt <= len(retryBackoffs); attempt++ {
 		if attempt > 0 {
 			select {
 			case <-ctx.Done():
 				return
-			case <-time.After(retryBackoffs[attempt-1] * time.Second):
+			case <-time.After(retryBackoffs[attempt-1]):
 			}
 		}
 		

@@ -1,8 +1,10 @@
 package storage
 
 import (
+	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"github.com/buzdyk/go-metrics-project/internal/database"
 	"github.com/buzdyk/go-metrics-project/internal/metrics"
 	"sync"
@@ -14,7 +16,7 @@ type PgStorage[T AllowedTypes] struct {
 
 var mu2 sync.Mutex
 
-func (s *PgStorage[T]) Store(name string, v T) error {
+func (s *PgStorage[T]) Store(ctx context.Context, name string, v T) error {
 	mu2.Lock()
 	defer mu2.Unlock()
 
@@ -24,11 +26,12 @@ func (s *PgStorage[T]) Store(name string, v T) error {
 	}
 	defer db.Close()
 
-	_, err = db.Exec("INSERT INTO "+s.table()+" (name, value) VALUES ($1, $2) ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value", name, v)
+	query := fmt.Sprintf(SQLInsertOrUpdate, s.table())
+	_, err = db.ExecContext(ctx, query, name, v)
 	return err
 }
 
-func (s *PgStorage[T]) StoreMany(m map[string]T) error {
+func (s *PgStorage[T]) StoreMany(ctx context.Context, m map[string]T) error {
 	mu2.Lock()
 	defer mu2.Unlock()
 
@@ -38,20 +41,21 @@ func (s *PgStorage[T]) StoreMany(m map[string]T) error {
 	}
 	defer db.Close()
 
-	tx, err := db.Begin()
+	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	stmt, err := tx.Prepare("INSERT INTO " + s.table() + " (name, value) VALUES ($1, $2) ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value")
+	query := fmt.Sprintf(SQLInsertOrUpdate, s.table())
+	stmt, err := tx.PrepareContext(ctx, query)
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 
 	for name, value := range m {
-		if _, err := stmt.Exec(name, value); err != nil {
+		if _, err := stmt.ExecContext(ctx, name, value); err != nil {
 			return err
 		}
 	}
@@ -59,7 +63,7 @@ func (s *PgStorage[T]) StoreMany(m map[string]T) error {
 	return tx.Commit()
 }
 
-func (s *PgStorage[T]) Values() (map[string]T, error) {
+func (s *PgStorage[T]) Values(ctx context.Context) (map[string]T, error) {
 	mu2.Lock()
 	defer mu2.Unlock()
 
@@ -69,7 +73,8 @@ func (s *PgStorage[T]) Values() (map[string]T, error) {
 	}
 	defer db.Close()
 
-	rows, err := db.Query("SELECT name, value FROM " + s.table())
+	query := fmt.Sprintf(SQLSelectAll, s.table())
+	rows, err := db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +93,7 @@ func (s *PgStorage[T]) Values() (map[string]T, error) {
 	return data, rows.Err()
 }
 
-func (s *PgStorage[T]) Value(name string) (T, error) {
+func (s *PgStorage[T]) Value(ctx context.Context, name string) (T, error) {
 	mu2.Lock()
 	defer mu2.Unlock()
 
@@ -99,7 +104,8 @@ func (s *PgStorage[T]) Value(name string) (T, error) {
 	defer db.Close()
 
 	var value T
-	err = db.QueryRow("SELECT value FROM "+s.table()+" WHERE name = $1", name).Scan(&value)
+	query := fmt.Sprintf(SQLSelectByName, s.table())
+	err = db.QueryRowContext(ctx, query, name).Scan(&value)
 	if errors.Is(err, sql.ErrNoRows) {
 		return 0, errors.New("unknown metric: " + name)
 	}

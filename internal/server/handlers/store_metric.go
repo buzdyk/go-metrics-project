@@ -29,15 +29,15 @@ func (mh *MetricHandler) StoreMetric(rw http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			http.Error(rw, "metric value is not convertible to int", http.StatusBadRequest)
 		}
-		err = mh.gaugeStore.Store(metricName, metrics.Gauge(v))
+		err = mh.gaugeStore.Store(r.Context(), metricName, metrics.Gauge(v))
 		fmt.Println("error storing gauge metric: ", err)
 	case metrics.CounterName:
 		v, err := strconv.Atoi(metricValue)
 		if err != nil {
 			http.Error(rw, "metric value is not convertible to int", http.StatusBadRequest)
 		}
-		currentValue, _ := mh.counterStore.Value(metricName)
-		err = mh.counterStore.Store(metricName, metrics.Counter(v)+currentValue)
+		currentValue, _ := mh.counterStore.Value(r.Context(), metricName)
+		err = mh.counterStore.Store(r.Context(), metricName, metrics.Counter(v)+currentValue)
 		fmt.Println("error storing counter metric: ", err)
 	}
 
@@ -65,12 +65,12 @@ func (mh *MetricHandler) StoreMetricJSON(rw http.ResponseWriter, r *http.Request
 
 	switch m.MType {
 	case metrics.GaugeName:
-		err := mh.gaugeStore.Store(m.ID, *m.Value)
+		err := mh.gaugeStore.Store(r.Context(), m.ID, *m.Value)
 		fmt.Println("error storing gauge metric: ", err)
 	case metrics.CounterName:
-		currentValue, _ := mh.counterStore.Value(m.ID)
+		currentValue, _ := mh.counterStore.Value(r.Context(), m.ID)
 		newValue := *m.Delta + currentValue
-		err := mh.counterStore.Store(m.ID, newValue)
+		err := mh.counterStore.Store(r.Context(), m.ID, newValue)
 		m.Delta = &newValue
 		fmt.Println("error storing gauge metric: ", err)
 	}
@@ -103,29 +103,22 @@ func (mh *MetricHandler) Updates(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	gauges := make(map[string]metrics.Gauge)
-	//counters := make(map[string]metrics.Counter)
 
 	for _, metric := range data {
 		switch metric.MType {
 		case metrics.GaugeName:
 			gauges[metric.ID] = *metric.Value
 		case metrics.CounterName:
-			currentValue, _ := mh.counterStore.Value(metric.ID)
+			currentValue, _ := mh.counterStore.Value(r.Context(), metric.ID)
 			newValue := *metric.Delta + currentValue
-			mh.counterStore.Store(metric.ID, newValue)
-			//counters[metric.ID] = newValue
+			mh.counterStore.Store(r.Context(), metric.ID, newValue)
 		}
 	}
 
-	if err := mh.gaugeStore.StoreMany(gauges); err != nil {
+	if err := mh.gaugeStore.StoreMany(r.Context(), gauges); err != nil {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
-
-	//if err := mh.counterStore.StoreMany(counters); err != nil {
-	//	http.Error(rw, err.Error(), http.StatusBadRequest)
-	//	return
-	//}
 
 	rw.WriteHeader(200)
 	rw.Header().Set("Content-Type", "application/json")
