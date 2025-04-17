@@ -13,6 +13,7 @@ type Config struct {
 	FileStoragePath string `env:"FILE_STORAGE_PATH"`
 	Restore         bool   `env:"RESTORE"`
 	PgDsn           string `env:"DATABASE_DSN"`
+	Key             string `env:"KEY"`
 }
 
 var (
@@ -28,6 +29,7 @@ func GetConfig() *Config {
 			FileStoragePath: "backup.json",
 			Restore:         false,
 			PgDsn:           "",
+			Key:             "",
 		}
 
 		address := flag.String("a", instance.Address, "Address to listen on")
@@ -35,6 +37,7 @@ func GetConfig() *Config {
 		fileStoragePath := flag.String("f", instance.FileStoragePath, "Backup file name")
 		restore := flag.Bool("r", instance.Restore, "Hydrate stats from file on startup? (true/false)")
 		pgDsn := flag.String("d", instance.PgDsn, "Postgres DSN string")
+		key := flag.String("k", instance.Key, "Key for SHA256 signature verification")
 
 		flag.Parse()
 
@@ -43,6 +46,7 @@ func GetConfig() *Config {
 		instance.FileStoragePath = *fileStoragePath
 		instance.Restore = *restore
 		instance.PgDsn = *pgDsn
+		instance.Key = *key
 
 		if err := env.Parse(instance); err != nil {
 			panic(fmt.Sprintf("error parsing env: %v", err))

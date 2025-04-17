@@ -2,6 +2,8 @@ package agent
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"github.com/buzdyk/go-metrics-project/internal/metrics"
@@ -16,12 +18,24 @@ func (t UnknownTypeError) Error() string {
 
 type HTTPSyncer struct {
 	Host string
+	Key  string
 }
 
-func NewHTTPSyncer(host string) *HTTPSyncer {
+func NewHTTPSyncer(host string, key string) *HTTPSyncer {
 	return &HTTPSyncer{
 		Host: host,
+		Key:  key,
 	}
+}
+
+func (hc *HTTPSyncer) calculateHash(value string) string {
+	if hc.Key == "" {
+		return ""
+	}
+	
+	h := sha256.New()
+	h.Write([]byte(value + hc.Key))
+	return hex.EncodeToString(h.Sum(nil))
 }
 
 func (hc *HTTPSyncer) SyncMetric(id string, value any) (*http.Response, error) {
@@ -47,7 +61,8 @@ func (hc *HTTPSyncer) SyncMetric(id string, value any) (*http.Response, error) {
 }
 
 func (hc *HTTPSyncer) syncGauge(name string, g metrics.Gauge) (*http.Response, error) {
-	endpoint := fmt.Sprintf("%v/update/gauge/%v/%v", hc.Host, name, g)
+	gaugeValue := fmt.Sprintf("%v", g)
+	endpoint := fmt.Sprintf("%v/update/gauge/%v/%v", hc.Host, name, gaugeValue)
 
 	req, err := http.NewRequest("POST", endpoint, nil)
 	if err != nil {
@@ -55,13 +70,20 @@ func (hc *HTTPSyncer) syncGauge(name string, g metrics.Gauge) (*http.Response, e
 	}
 	req.Header.Set("Content-Encoding", "gzip")
 	req.Header.Set("Content-Type", "text/plain")
+	
+	// Calculate hash of the string value with the key and set the header
+	hashValue := hc.calculateHash(gaugeValue)
+	if hashValue != "" {
+		req.Header.Set("HashSHA256", hashValue)
+	}
 
 	client := &http.Client{}
 	return client.Do(req)
 }
 
 func (hc *HTTPSyncer) syncCounter(name string, c metrics.Counter) (*http.Response, error) {
-	endpoint := fmt.Sprintf("%v/update/counter/%v/%v", hc.Host, name, c)
+	counterValue := fmt.Sprintf("%v", c)
+	endpoint := fmt.Sprintf("%v/update/counter/%v/%v", hc.Host, name, counterValue)
 
 	req, err := http.NewRequest("POST", endpoint, nil)
 	if err != nil {
@@ -69,6 +91,12 @@ func (hc *HTTPSyncer) syncCounter(name string, c metrics.Counter) (*http.Respons
 	}
 	req.Header.Set("Content-Encoding", "gzip")
 	req.Header.Set("Content-Type", "text/plain")
+	
+	// Calculate hash of the string value with the key and set the header
+	hashValue := hc.calculateHash(counterValue)
+	if hashValue != "" {
+		req.Header.Set("HashSHA256", hashValue)
+	}
 
 	client := &http.Client{}
 	return client.Do(req)
@@ -93,6 +121,12 @@ func (hc *HTTPSyncer) SyncMetrics(ms []metrics.Metric) (*http.Response, error) {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
+	
+	// Calculate hash of the JSON payload with the key and set the header
+	hashValue := hc.calculateHash(string(jsonData))
+	if hashValue != "" {
+		req.Header.Set("HashSHA256", hashValue)
+	}
 
 	return client.Do(req)
 }

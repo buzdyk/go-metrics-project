@@ -49,8 +49,10 @@ func NewServer() Server {
 	return Server{}
 }
 
-func withMiddleware(logger *zap.Logger, handler func(rw http.ResponseWriter, r *http.Request)) http.Handler {
+func withMiddleware(logger *zap.Logger, cfg *config.Config, handler func(rw http.ResponseWriter, r *http.Request)) http.Handler {
 	h := handlers.DecompressRequestMiddleware()(http.HandlerFunc(handler))
+	h = handlers.SignatureVerificationMiddleware(cfg.Key)(h)
+	h = handlers.ResponseHashMiddleware(cfg.Key)(h)
 	h = handlers.CompressResponseMiddleware()(h)
 	h = handlers.LoggingMiddleware(logger)(h)
 
@@ -65,14 +67,14 @@ func setupMux(cfg *config.Config) *chi.Mux {
 	mux := chi.NewRouter()
 	handler := handlers.NewMetricHandler(cs, gs)
 
-	mux.Handle("GET /", withMiddleware(logger, handler.GetIndex))
-	mux.Handle("GET /ping", withMiddleware(logger, handler.Ping))
-	mux.Handle("POST /update/", withMiddleware(logger, handler.StoreMetricJSON))
-	mux.Handle("POST /updates/", withMiddleware(logger, handler.Updates))
-	mux.Handle("POST /value/", withMiddleware(logger, handler.GetMetricJSON))
+	mux.Handle("GET /", withMiddleware(logger, cfg, handler.GetIndex))
+	mux.Handle("GET /ping", withMiddleware(logger, cfg, handler.Ping))
+	mux.Handle("POST /update/", withMiddleware(logger, cfg, handler.StoreMetricJSON))
+	mux.Handle("POST /updates/", withMiddleware(logger, cfg, handler.Updates))
+	mux.Handle("POST /value/", withMiddleware(logger, cfg, handler.GetMetricJSON))
 
-	mux.Handle("POST /update/{type}/{metric}/{value}", withMiddleware(logger, handler.StoreMetric))
-	mux.Handle("GET /value/{type}/{metric}", withMiddleware(logger, handler.GetMetric))
+	mux.Handle("POST /update/{type}/{metric}/{value}", withMiddleware(logger, cfg, handler.StoreMetric))
+	mux.Handle("GET /value/{type}/{metric}", withMiddleware(logger, cfg, handler.GetMetric))
 
 	return mux
 }
