@@ -1,9 +1,14 @@
 package metrics
 
 import (
+	"fmt"
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/mem"
 	"math/rand"
 	"reflect"
 	"runtime"
+	"sync"
+	"time"
 )
 
 type Gauge float64
@@ -52,6 +57,7 @@ var memStats = []string{
 type Collector struct {
 	pollCount   Counter
 	randomValue Gauge
+	mu          sync.Mutex
 }
 
 func NewCollector() *Collector {
@@ -59,6 +65,9 @@ func NewCollector() *Collector {
 }
 
 func (c *Collector) Collect(out map[string]any) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
 	r := reflect.ValueOf(m)
@@ -79,6 +88,24 @@ func (c *Collector) Collect(out map[string]any) {
 
 	out["PollCount"] = c.pollCount
 	out["RandomValue"] = c.randomValue
+}
+
+func (c *Collector) CollectSystem(out map[string]any) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	vmStat, err := mem.VirtualMemory()
+	if err == nil {
+		out["TotalMemory"] = Gauge(vmStat.Total)
+		out["FreeMemory"] = Gauge(vmStat.Free)
+	}
+
+	percentages, err := cpu.Percent(time.Second, true)
+	if err == nil {
+		for i, cpuPercent := range percentages {
+			out[fmt.Sprintf("CPUutilization%d", i+1)] = Gauge(cpuPercent)
+		}
+	}
 }
 
 func Exists(metric string) bool {

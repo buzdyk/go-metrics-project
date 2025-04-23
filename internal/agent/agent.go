@@ -16,6 +16,7 @@ type Syncer interface {
 
 type MetricsCollector interface {
 	Collect(out map[string]any)
+	CollectSystem(out map[string]any)
 }
 
 type Agent struct {
@@ -29,10 +30,11 @@ type Agent struct {
 }
 
 func (a *Agent) collect() {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-
 	a.collector.Collect(a.data)
+}
+
+func (a *Agent) collectSystem() {
+	a.collector.CollectSystem(a.data)
 }
 
 func (a *Agent) prepareMetrics() {
@@ -139,6 +141,7 @@ func (a *Agent) Run(ctx context.Context) {
 			return
 		case <-pollTicker.C:
 			go a.collect()
+			go a.collectSystem()
 		case <-reportTicker.C:
 			go a.prepareMetrics()
 		}
