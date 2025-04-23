@@ -24,6 +24,8 @@ type Agent struct {
 	syncer    Syncer
 	data      map[string]interface{}
 	mu        sync.RWMutex
+	metricsCh chan []metrics.Metric
+	workersWg sync.WaitGroup
 }
 
 func (a *Agent) collect() {
@@ -33,7 +35,7 @@ func (a *Agent) collect() {
 	a.collector.Collect(a.data)
 }
 
-func (a *Agent) sync() {
+func (a *Agent) prepareMetrics() {
 	a.mu.RLock()
 	defer a.mu.RUnlock()
 
@@ -60,55 +62,85 @@ func (a *Agent) sync() {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(a.config.RequestTimeout)*time.Second)
-	defer cancel()
-	
-	retryBackoffs := a.config.RetryBackoffs
-	
-	for attempt := 0; attempt <= len(retryBackoffs); attempt++ {
-		if attempt > 0 {
-			select {
-			case <-ctx.Done():
-				return
-			case <-time.After(retryBackoffs[attempt-1]):
-			}
-		}
-		
-		res, err := a.syncer.SyncMetrics(data)
-		if err == nil && res.StatusCode < 500 {
-			defer res.Body.Close()
+	select {
+	case a.metricsCh <- data:
+	default:
+		// канал заполнен, пропускаем эту партию метрик
+		fmt.Println("Warning: metrics channel is full, skipping batch")
+	}
+}
+
+func (a *Agent) syncWorker(ctx context.Context, id int) {
+	defer a.workersWg.Done()
+
+	for {
+		select {
+		case <-ctx.Done():
 			return
-		}
-		
-		if err != nil {
-			fmt.Printf("Attempt %d failed: %v\n", attempt+1, err)
-		} else {
-			fmt.Printf("Attempt %d failed with status: %d\n", attempt+1, res.StatusCode)
-			res.Body.Close()
-		}
-		
-		if attempt == len(retryBackoffs) {
-			fmt.Println("All retry attempts failed")
+		case data, ok := <-a.metricsCh:
+			if !ok {
+				return
+			}
+
+			reqCtx, cancel := context.WithTimeout(ctx, time.Duration(a.config.RequestTimeout)*time.Second)
+			retryBackoffs := a.config.RetryBackoffs
+
+			for attempt := 0; attempt <= len(retryBackoffs); attempt++ {
+				if attempt > 0 {
+					select {
+					case <-reqCtx.Done():
+						cancel()
+						return
+					case <-time.After(retryBackoffs[attempt-1]):
+					}
+				}
+
+				res, err := a.syncer.SyncMetrics(data)
+				if err == nil && res.StatusCode < 500 {
+					res.Body.Close()
+					break
+				}
+
+				if err != nil {
+					fmt.Printf("Worker %d: Attempt %d failed: %v\n", id, attempt+1, err)
+				} else {
+					fmt.Printf("Worker %d: Attempt %d failed with status: %d\n", id, attempt+1, res.StatusCode)
+					res.Body.Close()
+				}
+
+				if attempt == len(retryBackoffs) {
+					fmt.Printf("Worker %d: All retry attempts failed\n", id)
+				}
+			}
+
+			cancel()
 		}
 	}
 }
 
 func (a *Agent) Run(ctx context.Context) {
+	for i := 0; i < a.config.RateLimit; i++ {
+		a.workersWg.Add(1)
+		go a.syncWorker(ctx, i+1)
+	}
+
 	pollTicker := time.NewTicker(time.Duration(a.config.Collect) * time.Second)
-	syncTicker := time.NewTicker(time.Duration(a.config.Report) * time.Second)
+	reportTicker := time.NewTicker(time.Duration(a.config.Report) * time.Second)
 
 	defer pollTicker.Stop()
-	defer syncTicker.Stop()
+	defer reportTicker.Stop()
 
 	for {
 		select {
 		case <-ctx.Done():
-			fmt.Println("context is Done()")
+			fmt.Println("Agent context cancelled, shutting down...")
+			close(a.metricsCh)
+			a.workersWg.Wait()
 			return
 		case <-pollTicker.C:
 			go a.collect()
-		case <-syncTicker.C:
-			go a.sync()
+		case <-reportTicker.C:
+			go a.prepareMetrics()
 		}
 	}
 }
@@ -119,5 +151,6 @@ func NewAgent(config *Config, collector MetricsCollector, client Syncer) *Agent 
 		collector: collector,
 		syncer:    client,
 		data:      make(map[string]any),
+		metricsCh: make(chan []metrics.Metric, config.RateLimit),
 	}
 }

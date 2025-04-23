@@ -15,6 +15,7 @@ type Config struct {
 	RequestTimeout int             `env:"REQUEST_TIMEOUT"`
 	RetryBackoffs  []time.Duration `env:"RETRY_BACKOFFS"`
 	Key            string          `env:"KEY"`
+	RateLimit      int             `env:"RATE_LIMIT"`
 }
 
 func NewConfig() Config {
@@ -24,6 +25,7 @@ func NewConfig() Config {
 		Collect:        2,
 		RequestTimeout: 15,
 		RetryBackoffs:  []time.Duration{1 * time.Second, 3 * time.Second, 5 * time.Second},
+		RateLimit:      5,
 	}
 }
 
@@ -35,6 +37,7 @@ func NewConfigFromCLI() *Config {
 	collect := flag.Int("p", config.Collect, "Poll interval in seconds")
 	timeout := flag.Int("t", config.RequestTimeout, "Request timeout in seconds")
 	key := flag.String("k", "", "Key for SHA256 signature")
+	rateLimit := flag.Int("l", config.RateLimit, "Rate limit for outgoing requests")
 
 	defaultBackoffs := "1,3,5"
 	backoffsStr := flag.String("b", defaultBackoffs, "Retry backoffs in seconds (comma-separated, e.g., '1,3,5')")
@@ -46,6 +49,7 @@ func NewConfigFromCLI() *Config {
 	config.Collect = *collect
 	config.RequestTimeout = *timeout
 	config.Key = *key
+	config.RateLimit = *rateLimit
 
 	if *backoffsStr != "" {
 		backoffValues := strings.Split(*backoffsStr, ",")
