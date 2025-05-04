@@ -1,4 +1,4 @@
-package metrics
+package models
 
 // Gauge represents a floating point metric value
 type Gauge float64

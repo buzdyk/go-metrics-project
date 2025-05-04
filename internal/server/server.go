@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/buzdyk/go-metrics-project/internal/database"
-	"github.com/buzdyk/go-metrics-project/internal/metrics"
+	"github.com/buzdyk/go-metrics-project/internal/models"
 	"github.com/buzdyk/go-metrics-project/internal/server/config"
 	"github.com/buzdyk/go-metrics-project/internal/server/handlers"
 	"github.com/buzdyk/go-metrics-project/internal/storage"
@@ -79,14 +79,14 @@ func setupMux(cfg *config.Config) *chi.Mux {
 	return mux
 }
 
-func getStorage(cfg *config.Config) (storage.Storage[metrics.Counter], storage.Storage[metrics.Gauge]) {
+func getStorage(cfg *config.Config) (storage.Storage[models.Counter], storage.Storage[models.Gauge]) {
 	if cfg.PgDsn != "" {
-		cs := storage.NewPgStorage[metrics.Counter](database.GetClient())
-		gs := storage.NewPgStorage[metrics.Gauge](database.GetClient())
+		cs := storage.NewPgStorage[models.Counter](database.GetClient())
+		gs := storage.NewPgStorage[models.Gauge](database.GetClient())
 		return cs, gs
 	} else if cfg.FileStoragePath != "" {
-		cs := storage.NewFileStorage[metrics.Counter](cfg.FileStoragePath)
-		gs := storage.NewFileStorage[metrics.Gauge](cfg.FileStoragePath)
+		cs := storage.NewFileStorage[models.Counter](cfg.FileStoragePath)
+		gs := storage.NewFileStorage[models.Gauge](cfg.FileStoragePath)
 		return cs, gs
 	} else {
 		cs := storage.NewCounterMemStorage()

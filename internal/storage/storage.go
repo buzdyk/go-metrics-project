@@ -2,11 +2,11 @@ package storage
 
 import (
 	"context"
-	"github.com/buzdyk/go-metrics-project/internal/metrics"
+	"github.com/buzdyk/go-metrics-project/internal/models"
 )
 
 type AllowedTypes interface {
-	metrics.Gauge | metrics.Counter
+	models.Gauge | models.Counter
 }
 
 type Storage[T AllowedTypes] interface {

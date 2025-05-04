@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/buzdyk/go-metrics-project/internal/metrics"
+	"github.com/buzdyk/go-metrics-project/internal/models"
 	"os"
 	"sync"
 )
@@ -13,8 +13,8 @@ var mu sync.Mutex
 
 type FileEntry struct {
 	Type    string          `json:"type"`
-	Counter metrics.Counter `json:"counter"`
-	Gauge   metrics.Gauge   `json:"gauge"`
+	Counter models.Counter  `json:"counter"`
+	Gauge   models.Gauge    `json:"gauge"`
 }
 
 type FileStorage[T AllowedTypes] struct {
@@ -36,18 +36,18 @@ func (b *FileStorage[T]) StoreMany(ctx context.Context, m map[string]T) error {
 
 	var zero T
 	switch any(zero).(type) {
-	case metrics.Gauge:
+	case models.Gauge:
 		for name, value := range m {
 			data[name] = FileEntry{
-				Type:  metrics.GaugeName,
-				Gauge: metrics.Gauge(value),
+				Type:  models.GaugeName,
+				Gauge: models.Gauge(value),
 			}
 		}
-	case metrics.Counter:
+	case models.Counter:
 		for name, value := range m {
 			data[name] = FileEntry{
-				Type:    metrics.CounterName,
-				Counter: metrics.Counter(value),
+				Type:    models.CounterName,
+				Counter: models.Counter(value),
 			}
 		}
 	}
@@ -72,15 +72,15 @@ func (b *FileStorage[T]) Values(ctx context.Context) (map[string]T, error) {
 
 	var zero T
 	switch any(zero).(type) {
-	case metrics.Gauge:
+	case models.Gauge:
 		for name, entry := range data {
-			if entry.Type == metrics.GaugeName {
+			if entry.Type == models.GaugeName {
 				m[name] = T(entry.Gauge)
 			}
 		}
-	case metrics.Counter:
+	case models.Counter:
 		for name, entry := range data {
-			if entry.Type == metrics.CounterName {
+			if entry.Type == models.CounterName {
 				m[name] = T(entry.Counter)
 			}
 		}

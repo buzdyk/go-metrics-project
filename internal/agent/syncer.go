@@ -6,7 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/buzdyk/go-metrics-project/internal/metrics"
+	"github.com/buzdyk/go-metrics-project/internal/models"
 	"net/http"
 )
 
@@ -40,14 +40,14 @@ func (hc *HTTPSyncer) calculateHash(value string) string {
 
 func (hc *HTTPSyncer) SyncMetric(id string, value any) (*http.Response, error) {
 	switch v := value.(type) {
-	case metrics.Gauge:
+	case models.Gauge:
 		res, err := hc.syncGauge(id, v)
 		if err != nil {
 			return nil, err
 		}
 
 		return res, nil
-	case metrics.Counter:
+	case models.Counter:
 		res, err := hc.syncCounter(id, v)
 
 		if err != nil {
@@ -60,7 +60,7 @@ func (hc *HTTPSyncer) SyncMetric(id string, value any) (*http.Response, error) {
 	}
 }
 
-func (hc *HTTPSyncer) syncGauge(name string, g metrics.Gauge) (*http.Response, error) {
+func (hc *HTTPSyncer) syncGauge(name string, g models.Gauge) (*http.Response, error) {
 	gaugeValue := fmt.Sprintf("%v", g)
 	endpoint := fmt.Sprintf("%v/update/gauge/%v/%v", hc.Host, name, gaugeValue)
 
@@ -81,7 +81,7 @@ func (hc *HTTPSyncer) syncGauge(name string, g metrics.Gauge) (*http.Response, e
 	return client.Do(req)
 }
 
-func (hc *HTTPSyncer) syncCounter(name string, c metrics.Counter) (*http.Response, error) {
+func (hc *HTTPSyncer) syncCounter(name string, c models.Counter) (*http.Response, error) {
 	counterValue := fmt.Sprintf("%v", c)
 	endpoint := fmt.Sprintf("%v/update/counter/%v/%v", hc.Host, name, counterValue)
 
@@ -102,7 +102,7 @@ func (hc *HTTPSyncer) syncCounter(name string, c metrics.Counter) (*http.Respons
 	return client.Do(req)
 }
 
-func (hc *HTTPSyncer) SyncMetrics(ms []metrics.Metric) (*http.Response, error) {
+func (hc *HTTPSyncer) SyncMetrics(ms []models.Metric) (*http.Response, error) {
 	endpoint := fmt.Sprintf("%v/updates/", hc.Host)
 
 	jsonData, err := json.Marshal(ms)

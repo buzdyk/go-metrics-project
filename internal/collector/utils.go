@@ -1,4 +1,4 @@
-package metrics
+package collector
 
 // Exists checks if a metric name is valid
 func Exists(metric string) bool {

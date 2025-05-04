@@ -3,30 +3,31 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/buzdyk/go-metrics-project/internal/metrics"
+	"github.com/buzdyk/go-metrics-project/internal/collector"
+	"github.com/buzdyk/go-metrics-project/internal/models"
 	"net/http"
 )
 
 func (mh *MetricHandler) GetMetricJSON(rw http.ResponseWriter, r *http.Request) {
-	var m metrics.Metric
+	var m models.Metric
 
 	if err := json.NewDecoder(r.Body).Decode(&m); err != nil {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	if !metrics.IsValidType(m.MType) {
+	if !collector.IsValidType(m.MType) {
 		rw.WriteHeader(400)
 		return
 	}
 
-	if !metrics.Exists(m.ID) {
+	if !collector.Exists(m.ID) {
 		http.Error(rw, "metric does not exist", http.StatusBadRequest)
 		return
 	}
 
 	switch m.MType {
-	case metrics.GaugeName:
+	case models.GaugeName:
 		if v, err := mh.gaugeStore.Value(r.Context(), m.ID); err != nil {
 			fmt.Println(err)
 			rw.WriteHeader(404)
@@ -36,7 +37,7 @@ func (mh *MetricHandler) GetMetricJSON(rw http.ResponseWriter, r *http.Request) 
 			rw.Header().Set("Content-Type", "application/json")
 			rw.Write(resp)
 		}
-	case metrics.CounterName:
+	case models.CounterName:
 		v, err := mh.counterStore.Value(r.Context(), m.ID)
 		if err != nil {
 			fmt.Println(err)

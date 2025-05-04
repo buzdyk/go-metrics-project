@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/buzdyk/go-metrics-project/internal/database"
-	"github.com/buzdyk/go-metrics-project/internal/metrics"
+	"github.com/buzdyk/go-metrics-project/internal/models"
 )
 
 type PgStorage[T AllowedTypes] struct {
@@ -105,9 +105,9 @@ func (s *PgStorage[T]) Value(ctx context.Context, name string) (T, error) {
 func (s *PgStorage[T]) table() string {
 	var zero T
 	switch any(zero).(type) {
-	case metrics.Gauge:
+	case models.Gauge:
 		return "gauges"
-	case metrics.Counter:
+	case models.Counter:
 		return "counters"
 	default:
 		panic("unsupported type")

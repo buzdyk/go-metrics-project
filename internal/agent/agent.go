@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/buzdyk/go-metrics-project/internal/agent/config"
-	"github.com/buzdyk/go-metrics-project/internal/metrics"
+	"github.com/buzdyk/go-metrics-project/internal/models"
 	"net/http"
 	"sync"
 	"time"
@@ -12,7 +12,7 @@ import (
 
 type Syncer interface {
 	SyncMetric(name string, value any) (*http.Response, error)
-	SyncMetrics([]metrics.Metric) (*http.Response, error)
+	SyncMetrics([]models.Metric) (*http.Response, error)
 }
 
 type MetricsCollector interface {
@@ -26,7 +26,7 @@ type Agent struct {
 	syncer    Syncer
 	data      map[string]interface{}
 	mu        sync.RWMutex
-	metricsCh chan []metrics.Metric
+	metricsCh chan []models.Metric
 	workersWg sync.WaitGroup
 }
 
@@ -42,20 +42,20 @@ func (a *Agent) prepareMetrics() {
 	a.mu.RLock()
 	defer a.mu.RUnlock()
 
-	var data []metrics.Metric
+	var data []models.Metric
 
 	for id, value := range a.data {
 		switch v := value.(type) {
-		case metrics.Gauge:
-			data = append(data, metrics.Metric{
+		case models.Gauge:
+			data = append(data, models.Metric{
 				ID:    id,
-				MType: metrics.GaugeName,
+				MType: models.GaugeName,
 				Value: &v,
 			})
-		case metrics.Counter:
-			data = append(data, metrics.Metric{
+		case models.Counter:
+			data = append(data, models.Metric{
 				ID:    id,
-				MType: metrics.CounterName,
+				MType: models.CounterName,
 				Delta: &v,
 			})
 		}
@@ -155,6 +155,6 @@ func NewAgent(config *config.Config, collector MetricsCollector, client Syncer) 
 		collector: collector,
 		syncer:    client,
 		data:      make(map[string]any),
-		metricsCh: make(chan []metrics.Metric, config.RateLimit),
+		metricsCh: make(chan []models.Metric, config.RateLimit),
 	}
 }

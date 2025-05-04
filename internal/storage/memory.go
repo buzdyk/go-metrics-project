@@ -3,7 +3,7 @@ package storage
 import (
 	"context"
 	"errors"
-	"github.com/buzdyk/go-metrics-project/internal/metrics"
+	"github.com/buzdyk/go-metrics-project/internal/models"
 	"sync"
 )
 
@@ -61,10 +61,10 @@ func NewMemStorage[T AllowedTypes]() *MemStorage[T] {
 	}
 }
 
-func NewGaugeMemStorage() *MemStorage[metrics.Gauge] {
-	return NewMemStorage[metrics.Gauge]()
+func NewGaugeMemStorage() *MemStorage[models.Gauge] {
+	return NewMemStorage[models.Gauge]()
 }
 
-func NewCounterMemStorage() *MemStorage[metrics.Counter] {
-	return NewMemStorage[metrics.Counter]()
+func NewCounterMemStorage() *MemStorage[models.Counter] {
+	return NewMemStorage[models.Counter]()
 }

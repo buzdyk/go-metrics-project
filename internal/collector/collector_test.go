@@ -1,10 +1,11 @@
-package metrics
+package collector
 
 import (
 	"reflect"
 	"runtime"
 	"testing"
 
+	"github.com/buzdyk/go-metrics-project/internal/models"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -34,7 +35,7 @@ func TestCollector_RandomValue(t *testing.T) {
 
 	collector.Collect(out)
 
-	_, ok := out["RandomValue"].(Gauge)
+	_, ok := out["RandomValue"].(models.Gauge)
 	assert.True(t, ok, "RandomValue should be a Gauge type")
 }
 
@@ -66,7 +67,7 @@ func TestCollector_CorrectDataTypes(t *testing.T) {
 		field := r.FieldByName(stat)
 		switch field.Kind() {
 		case reflect.Uint64, reflect.Uint32, reflect.Float64:
-			assert.IsType(t, Gauge(0), out[stat], "Metric %s has an unexpected type %T", stat, out[stat])
+			assert.IsType(t, models.Gauge(0), out[stat], "Metric %s has an unexpected type %T", stat, out[stat])
 		}
 	}
 }

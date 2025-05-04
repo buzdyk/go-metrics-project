@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/buzdyk/go-metrics-project/internal/agent"
 	"github.com/buzdyk/go-metrics-project/internal/agent/config"
-	"github.com/buzdyk/go-metrics-project/internal/metrics"
+	"github.com/buzdyk/go-metrics-project/internal/collector"
 	"os"
 	"os/signal"
 	"syscall"
@@ -13,7 +13,7 @@ import (
 
 func main() {
 	config := config.NewConfigFromCLI()
-	collector := metrics.NewCollector()
+	collector := collector.NewCollector()
 	client := agent.NewHTTPSyncer(config.Address, config.Key)
 
 	a := agent.NewAgent(config, collector, client)
