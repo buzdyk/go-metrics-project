@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/buzdyk/go-metrics-project/internal/agent"
+	"github.com/buzdyk/go-metrics-project/internal/agent/config"
 	"github.com/buzdyk/go-metrics-project/internal/metrics"
 	"os"
 	"os/signal"
@@ -11,7 +12,7 @@ import (
 )
 
 func main() {
-	config := agent.NewConfigFromCLI()
+	config := config.NewConfigFromCLI()
 	collector := metrics.NewCollector()
 	client := agent.NewHTTPSyncer(config.Address, config.Key)
 

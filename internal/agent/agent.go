@@ -3,6 +3,7 @@ package agent
 import (
 	"context"
 	"fmt"
+	"github.com/buzdyk/go-metrics-project/internal/agent/config"
 	"github.com/buzdyk/go-metrics-project/internal/metrics"
 	"net/http"
 	"sync"
@@ -20,7 +21,7 @@ type MetricsCollector interface {
 }
 
 type Agent struct {
-	config    Config
+	config    config.Config
 	collector MetricsCollector
 	syncer    Syncer
 	data      map[string]interface{}
@@ -148,7 +149,7 @@ func (a *Agent) Run(ctx context.Context) {
 	}
 }
 
-func NewAgent(config *Config, collector MetricsCollector, client Syncer) *Agent {
+func NewAgent(config *config.Config, collector MetricsCollector, client Syncer) *Agent {
 	return &Agent{
 		config:    *config,
 		collector: collector,
