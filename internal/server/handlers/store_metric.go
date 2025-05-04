@@ -42,7 +42,7 @@ func (mh *MetricHandler) StoreMetric(rw http.ResponseWriter, r *http.Request) {
 		fmt.Println("error storing counter metric: ", err)
 	}
 
-	rw.WriteHeader(200)
+	rw.WriteHeader(http.StatusOK)
 	rw.Write([]byte("ok"))
 }
 
@@ -78,7 +78,7 @@ func (mh *MetricHandler) StoreMetricJSON(rw http.ResponseWriter, r *http.Request
 
 	resp, _ := json.Marshal(m)
 
-	rw.WriteHeader(200)
+	rw.WriteHeader(http.StatusOK)
 	rw.Header().Set("Content-Type", "application/json")
 	rw.Write(resp)
 }
@@ -121,6 +121,6 @@ func (mh *MetricHandler) Updates(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rw.WriteHeader(200)
+	rw.WriteHeader(http.StatusOK)
 	rw.Header().Set("Content-Type", "application/json")
 }

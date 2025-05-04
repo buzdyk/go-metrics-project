@@ -12,7 +12,7 @@ func (mh *MetricHandler) GetMetric(rw http.ResponseWriter, r *http.Request) {
 	metricName := r.PathValue("metric")
 
 	if !collector.IsValidType(metricType) {
-		rw.WriteHeader(400)
+		rw.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
@@ -24,14 +24,14 @@ func (mh *MetricHandler) GetMetric(rw http.ResponseWriter, r *http.Request) {
 	switch metricType {
 	case models.GaugeName:
 		if v, err := mh.gaugeStore.Value(r.Context(), metricName); err != nil {
-			rw.WriteHeader(404)
+			rw.WriteHeader(http.StatusNotFound)
 		} else {
 			rw.Write([]byte(strconv.FormatFloat(float64(v), 'f', -1, 64)))
 		}
 	case models.CounterName:
 		v, err := mh.counterStore.Value(r.Context(), metricName)
 		if err != nil {
-			rw.WriteHeader(404)
+			rw.WriteHeader(http.StatusNotFound)
 		} else {
 			rw.Write([]byte(strconv.Itoa(int(v))))
 		}

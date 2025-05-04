@@ -17,7 +17,7 @@ func (mh *MetricHandler) GetMetricJSON(rw http.ResponseWriter, r *http.Request) 
 	}
 
 	if !collector.IsValidType(m.MType) {
-		rw.WriteHeader(400)
+		rw.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
@@ -30,7 +30,7 @@ func (mh *MetricHandler) GetMetricJSON(rw http.ResponseWriter, r *http.Request) 
 	case models.GaugeName:
 		if v, err := mh.gaugeStore.Value(r.Context(), m.ID); err != nil {
 			fmt.Println(err)
-			rw.WriteHeader(404)
+			rw.WriteHeader(http.StatusNotFound)
 		} else {
 			m.Value = &v
 			resp, _ := json.Marshal(m)
@@ -41,7 +41,7 @@ func (mh *MetricHandler) GetMetricJSON(rw http.ResponseWriter, r *http.Request) 
 		v, err := mh.counterStore.Value(r.Context(), m.ID)
 		if err != nil {
 			fmt.Println(err)
-			rw.WriteHeader(404)
+			rw.WriteHeader(http.StatusNotFound)
 		} else {
 			rw.Header().Set("Content-Type", "application/json")
 			m.Delta = &v
