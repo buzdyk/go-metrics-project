@@ -72,7 +72,7 @@ func (pg *Client) RunMigrations() error {
 	}
 
 	m, err := migrate.NewWithDatabaseInstance(
-		"file://internal/database/migrations",
+		"file://migrations",
 		"postgres",
 		driver,
 	)
