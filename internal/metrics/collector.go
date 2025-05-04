@@ -1,29 +1,13 @@
 package metrics
 
 import (
-	"fmt"
-	"github.com/shirou/gopsutil/v3/cpu"
-	"github.com/shirou/gopsutil/v3/mem"
 	"math/rand"
 	"reflect"
 	"runtime"
 	"sync"
-	"time"
 )
 
-type Gauge float64
-type Counter uint64
-
-const GaugeName = "gauge"
-const CounterName = "counter"
-
-type Metric struct {
-	ID    string   `json:"id"`              // metric name
-	MType string   `json:"type"`            // counter or gauge
-	Delta *Counter `json:"delta,omitempty"` // value for counter
-	Value *Gauge   `json:"value,omitempty"` // value for gauge
-}
-
+// List of memory statistics to collect
 var memStats = []string{
 	"Alloc",
 	"BuckHashSys",
@@ -54,16 +38,19 @@ var memStats = []string{
 	"TotalAlloc",
 }
 
+// Collector collects runtime metrics
 type Collector struct {
 	pollCount   Counter
 	randomValue Gauge
 	mu          sync.Mutex
 }
 
+// NewCollector creates a new metrics collector
 func NewCollector() *Collector {
 	return &Collector{}
 }
 
+// Collect gathers runtime metrics and stores them in the provided map
 func (c *Collector) Collect(out map[string]any) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -88,30 +75,4 @@ func (c *Collector) Collect(out map[string]any) {
 
 	out["PollCount"] = c.pollCount
 	out["RandomValue"] = c.randomValue
-}
-
-func (c *Collector) CollectSystem(out map[string]any) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	vmStat, err := mem.VirtualMemory()
-	if err == nil {
-		out["TotalMemory"] = Gauge(vmStat.Total)
-		out["FreeMemory"] = Gauge(vmStat.Free)
-	}
-
-	percentages, err := cpu.Percent(time.Second, true)
-	if err == nil {
-		for i, cpuPercent := range percentages {
-			out[fmt.Sprintf("CPUutilization%d", i+1)] = Gauge(cpuPercent)
-		}
-	}
-}
-
-func Exists(metric string) bool {
-	return metric != "unknown"
-}
-
-func IsValidType(t string) bool {
-	return t == GaugeName || t == CounterName
 }
