@@ -3,6 +3,8 @@ package agent
 import (
 	"context"
 	"fmt"
+	"github.com/buzdyk/go-metrics-project/internal/agent/config"
+	"github.com/buzdyk/go-metrics-project/internal/models"
 	"net/http"
 	"sync"
 	"time"
@@ -10,78 +12,149 @@ import (
 
 type Syncer interface {
 	SyncMetric(name string, value any) (*http.Response, error)
+	SyncMetrics([]models.Metric) (*http.Response, error)
 }
 
 type MetricsCollector interface {
 	Collect(out map[string]any)
+	CollectSystem(out map[string]any)
 }
 
 type Agent struct {
-	config    Config
+	config    config.Config
 	collector MetricsCollector
 	syncer    Syncer
 	data      map[string]interface{}
 	mu        sync.RWMutex
+	metricsCh chan []models.Metric
+	workersWg sync.WaitGroup
 }
 
 func (a *Agent) collect() {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-
 	a.collector.Collect(a.data)
 }
 
-func (a *Agent) sync() {
+func (a *Agent) collectSystem() {
+	a.collector.CollectSystem(a.data)
+}
+
+func (a *Agent) prepareMetrics() {
 	a.mu.RLock()
 	defer a.mu.RUnlock()
 
-	var wg sync.WaitGroup
-	wg.Add(len(a.data))
+	var data []models.Metric
 
 	for id, value := range a.data {
-		go func(id string, value any) {
-			defer wg.Done()
-
-			resp, err := a.syncer.SyncMetric(id, value)
-			if err == nil {
-				defer resp.Body.Close()
-			}
-
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-		}(id, value)
+		switch v := value.(type) {
+		case models.Gauge:
+			data = append(data, models.Metric{
+				ID:    id,
+				MType: models.GaugeName,
+				Value: &v,
+			})
+		case models.Counter:
+			data = append(data, models.Metric{
+				ID:    id,
+				MType: models.CounterName,
+				Delta: &v,
+			})
+		}
 	}
 
-	wg.Wait()
+	if len(data) == 0 {
+		return
+	}
+
+	select {
+	case a.metricsCh <- data:
+	default:
+		// канал заполнен, пропускаем эту партию метрик
+		fmt.Println("Warning: metrics channel is full, skipping batch")
+	}
 }
 
-func (a *Agent) Run(ctx context.Context) {
-	pollTicker := time.NewTicker(time.Duration(a.config.Collect) * time.Second)
-	syncTicker := time.NewTicker(time.Duration(a.config.Report) * time.Second)
-
-	defer pollTicker.Stop()
-	defer syncTicker.Stop()
+func (a *Agent) syncWorker(ctx context.Context, id int) {
+	defer a.workersWg.Done()
 
 	for {
 		select {
 		case <-ctx.Done():
-			fmt.Println("context is Done()")
 			return
-		case <-pollTicker.C:
-			go a.collect()
-		case <-syncTicker.C:
-			go a.sync()
+		case data, ok := <-a.metricsCh:
+			if !ok {
+				return
+			}
+
+			reqCtx, cancel := context.WithTimeout(ctx, time.Duration(a.config.RequestTimeout)*time.Second)
+			retryBackoffs := a.config.RetryBackoffs
+
+			for attempt := 0; attempt <= len(retryBackoffs); attempt++ {
+				if attempt > 0 {
+					select {
+					case <-reqCtx.Done():
+						cancel()
+						return
+					case <-time.After(retryBackoffs[attempt-1]):
+					}
+				}
+
+				res, err := a.syncer.SyncMetrics(data)
+				if err == nil && res.StatusCode < 500 {
+					res.Body.Close()
+					break
+				}
+
+				if err != nil {
+					fmt.Printf("Worker %d: Attempt %d failed: %v\n", id, attempt+1, err)
+				} else {
+					fmt.Printf("Worker %d: Attempt %d failed with status: %d\n", id, attempt+1, res.StatusCode)
+					res.Body.Close()
+				}
+
+				if attempt == len(retryBackoffs) {
+					fmt.Printf("Worker %d: All retry attempts failed\n", id)
+				}
+			}
+
+			cancel()
 		}
 	}
 }
 
-func NewAgent(config *Config, collector MetricsCollector, client Syncer) *Agent {
+func (a *Agent) Run(ctx context.Context) {
+	for i := 0; i < a.config.RateLimit; i++ {
+		a.workersWg.Add(1)
+		go a.syncWorker(ctx, i+1)
+	}
+
+	pollTicker := time.NewTicker(time.Duration(a.config.Collect) * time.Second)
+	reportTicker := time.NewTicker(time.Duration(a.config.Report) * time.Second)
+
+	defer pollTicker.Stop()
+	defer reportTicker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			fmt.Println("Agent context cancelled, shutting down...")
+			close(a.metricsCh)
+			a.workersWg.Wait()
+			return
+		case <-pollTicker.C:
+			go a.collect()
+			go a.collectSystem()
+		case <-reportTicker.C:
+			go a.prepareMetrics()
+		}
+	}
+}
+
+func NewAgent(config *config.Config, collector MetricsCollector, client Syncer) *Agent {
 	return &Agent{
 		config:    *config,
 		collector: collector,
 		syncer:    client,
 		data:      make(map[string]any),
+		metricsCh: make(chan []models.Metric, config.RateLimit),
 	}
 }

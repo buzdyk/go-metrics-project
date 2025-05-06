@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"fmt"
-	"github.com/buzdyk/go-metrics-project/internal/metrics"
+	"github.com/buzdyk/go-metrics-project/internal/models"
 	"html/template"
 	"net/http"
 	"path/filepath"
@@ -10,12 +10,12 @@ import (
 )
 
 func (mh *MetricHandler) GetIndex(rw http.ResponseWriter, r *http.Request) {
-	gauges, _ := mh.gaugeStore.Values()
-	counters, _ := mh.counterStore.Values()
+	gauges, _ := mh.gaugeStore.Values(r.Context())
+	counters, _ := mh.counterStore.Values(r.Context())
 
 	data := struct {
-		Gauges   map[string]metrics.Gauge
-		Counters map[string]metrics.Counter
+		Gauges   map[string]models.Gauge
+		Counters map[string]models.Counter
 	}{gauges, counters}
 
 	_, filename, _, _ := runtime.Caller(0)

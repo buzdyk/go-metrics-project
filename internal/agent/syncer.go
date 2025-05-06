@@ -2,9 +2,11 @@ package agent
 
 import (
 	"bytes"
-	"compress/gzip"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
-	"github.com/buzdyk/go-metrics-project/internal/metrics"
+	"github.com/buzdyk/go-metrics-project/internal/models"
 	"net/http"
 )
 
@@ -16,24 +18,36 @@ func (t UnknownTypeError) Error() string {
 
 type HTTPSyncer struct {
 	Host string
+	Key  string
 }
 
-func NewHTTPSyncer(host string) *HTTPSyncer {
+func NewHTTPSyncer(host string, key string) *HTTPSyncer {
 	return &HTTPSyncer{
 		Host: host,
+		Key:  key,
 	}
+}
+
+func (hc *HTTPSyncer) calculateHash(value string) string {
+	if hc.Key == "" {
+		return ""
+	}
+	
+	h := sha256.New()
+	h.Write([]byte(value + hc.Key))
+	return hex.EncodeToString(h.Sum(nil))
 }
 
 func (hc *HTTPSyncer) SyncMetric(id string, value any) (*http.Response, error) {
 	switch v := value.(type) {
-	case metrics.Gauge:
+	case models.Gauge:
 		res, err := hc.syncGauge(id, v)
 		if err != nil {
 			return nil, err
 		}
 
 		return res, nil
-	case metrics.Counter:
+	case models.Counter:
 		res, err := hc.syncCounter(id, v)
 
 		if err != nil {
@@ -46,44 +60,73 @@ func (hc *HTTPSyncer) SyncMetric(id string, value any) (*http.Response, error) {
 	}
 }
 
-func (hc *HTTPSyncer) syncGauge(name string, g metrics.Gauge) (*http.Response, error) {
-	endpoint := fmt.Sprintf("%v/update/gauge/%v/%v", hc.Host, name, g)
+func (hc *HTTPSyncer) syncGauge(name string, g models.Gauge) (*http.Response, error) {
+	gaugeValue := fmt.Sprintf("%v", g)
+	endpoint := fmt.Sprintf("%v/update/gauge/%v/%v", hc.Host, name, gaugeValue)
 
-	var buf bytes.Buffer
-	gzipWriter := gzip.NewWriter(&buf)
-	if _, err := gzipWriter.Write([]byte{}); err != nil {
-		return nil, err
-	}
-	gzipWriter.Close()
-
-	req, err := http.NewRequest("POST", endpoint, &buf)
+	req, err := http.NewRequest("POST", endpoint, nil)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Content-Encoding", "gzip")
 	req.Header.Set("Content-Type", "text/plain")
+	
+	// Calculate hash of the string value with the key and set the header
+	hashValue := hc.calculateHash(gaugeValue)
+	if hashValue != "" {
+		req.Header.Set("HashSHA256", hashValue)
+	}
 
 	client := &http.Client{}
 	return client.Do(req)
 }
 
-func (hc *HTTPSyncer) syncCounter(name string, c metrics.Counter) (*http.Response, error) {
-	endpoint := fmt.Sprintf("%v/update/counter/%v/%v", hc.Host, name, c)
+func (hc *HTTPSyncer) syncCounter(name string, c models.Counter) (*http.Response, error) {
+	counterValue := fmt.Sprintf("%v", c)
+	endpoint := fmt.Sprintf("%v/update/counter/%v/%v", hc.Host, name, counterValue)
 
-	var buf bytes.Buffer
-	gzipWriter := gzip.NewWriter(&buf)
-	if _, err := gzipWriter.Write([]byte{}); err != nil {
-		return nil, err
-	}
-	gzipWriter.Close()
-
-	req, err := http.NewRequest("POST", endpoint, &buf)
+	req, err := http.NewRequest("POST", endpoint, nil)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Content-Encoding", "gzip")
 	req.Header.Set("Content-Type", "text/plain")
+	
+	// Calculate hash of the string value with the key and set the header
+	hashValue := hc.calculateHash(counterValue)
+	if hashValue != "" {
+		req.Header.Set("HashSHA256", hashValue)
+	}
 
 	client := &http.Client{}
+	return client.Do(req)
+}
+
+func (hc *HTTPSyncer) SyncMetrics(ms []models.Metric) (*http.Response, error) {
+	endpoint := fmt.Sprintf("%v/updates/", hc.Host)
+
+	jsonData, err := json.Marshal(ms)
+	if err != nil {
+		return nil, err
+	}
+
+	client := &http.Client{}
+	var buf bytes.Buffer
+
+	if _, err := buf.Write(jsonData); err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest("POST", endpoint, &buf)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	
+	// Calculate hash of the JSON payload with the key and set the header
+	hashValue := hc.calculateHash(string(jsonData))
+	if hashValue != "" {
+		req.Header.Set("HashSHA256", hashValue)
+	}
+
 	return client.Do(req)
 }

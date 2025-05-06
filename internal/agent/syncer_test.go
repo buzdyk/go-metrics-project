@@ -2,7 +2,7 @@ package agent
 
 import (
 	"errors"
-	"github.com/buzdyk/go-metrics-project/internal/metrics"
+	"github.com/buzdyk/go-metrics-project/internal/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"net/http"
@@ -41,9 +41,9 @@ func TestHTTPSyncer_SyncMetric(t *testing.T) {
 		err error
 	)
 
-	r, _ = syncer.SyncMetric("metric", metrics.Gauge(42))
+	r, _ = syncer.SyncMetric("metric", models.Gauge(42))
 	r.Body.Close()
-	r, _ = syncer.SyncMetric("metric", metrics.Counter(42))
+	r, _ = syncer.SyncMetric("metric", models.Counter(42))
 	r.Body.Close()
 	r, err = syncer.SyncMetric("metric", int64(20))
 	if r != nil {

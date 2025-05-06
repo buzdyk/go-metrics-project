@@ -10,8 +10,7 @@ import (
 )
 
 func main() {
-	c := server.NewConfigFromCLI()
-	s := server.NewServer(c)
+	s := server.NewServer()
 
 	ctx, cancel := context.WithCancel(context.Background())
 

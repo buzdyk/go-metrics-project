@@ -1,9 +1,10 @@
 package storage
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
-	"github.com/buzdyk/go-metrics-project/internal/metrics"
+	"github.com/buzdyk/go-metrics-project/internal/models"
 	"os"
 	"sync"
 )
@@ -12,8 +13,8 @@ var mu sync.Mutex
 
 type FileEntry struct {
 	Type    string          `json:"type"`
-	Counter metrics.Counter `json:"counter"`
-	Gauge   metrics.Gauge   `json:"gauge"`
+	Counter models.Counter  `json:"counter"`
+	Gauge   models.Gauge    `json:"gauge"`
 }
 
 type FileStorage[T AllowedTypes] struct {
@@ -24,29 +25,29 @@ func NewFileStorage[T AllowedTypes](filepath string) *FileStorage[T] {
 	return &FileStorage[T]{filepath: filepath}
 }
 
-func (b *FileStorage[T]) StoreMany(m map[string]T) error {
+func (b *FileStorage[T]) StoreMany(ctx context.Context, m map[string]T) error {
 	mu.Lock()
 	defer mu.Unlock()
 
-	data, err := b.readFile()
+	data, err := b.readFile(ctx)
 	if err != nil {
 		return err
 	}
 
 	var zero T
 	switch any(zero).(type) {
-	case metrics.Gauge:
+	case models.Gauge:
 		for name, value := range m {
 			data[name] = FileEntry{
-				Type:  metrics.GaugeName,
-				Gauge: metrics.Gauge(value),
+				Type:  models.GaugeName,
+				Gauge: models.Gauge(value),
 			}
 		}
-	case metrics.Counter:
+	case models.Counter:
 		for name, value := range m {
 			data[name] = FileEntry{
-				Type:    metrics.CounterName,
-				Counter: metrics.Counter(value),
+				Type:    models.CounterName,
+				Counter: models.Counter(value),
 			}
 		}
 	}
@@ -60,11 +61,8 @@ func (b *FileStorage[T]) StoreMany(m map[string]T) error {
 	return json.NewEncoder(file).Encode(data)
 }
 
-func (b *FileStorage[T]) Values() (map[string]T, error) {
-	mu.Lock()
-	defer mu.Unlock()
-
-	data, err := b.readFile()
+func (b *FileStorage[T]) Values(ctx context.Context) (map[string]T, error) {
+	data, err := b.readFile(ctx)
 
 	if err != nil {
 		return nil, err
@@ -74,15 +72,15 @@ func (b *FileStorage[T]) Values() (map[string]T, error) {
 
 	var zero T
 	switch any(zero).(type) {
-	case metrics.Gauge:
+	case models.Gauge:
 		for name, entry := range data {
-			if entry.Type == metrics.GaugeName {
+			if entry.Type == models.GaugeName {
 				m[name] = T(entry.Gauge)
 			}
 		}
-	case metrics.Counter:
+	case models.Counter:
 		for name, entry := range data {
-			if entry.Type == metrics.CounterName {
+			if entry.Type == models.CounterName {
 				m[name] = T(entry.Counter)
 			}
 		}
@@ -91,10 +89,10 @@ func (b *FileStorage[T]) Values() (map[string]T, error) {
 	return m, nil
 }
 
-func (b *FileStorage[T]) Value(name string) (T, error) {
+func (b *FileStorage[T]) Value(ctx context.Context, name string) (T, error) {
 	var zero T
 
-	data, err := b.Values()
+	data, err := b.Values(ctx)
 
 	if err != nil {
 		return zero, err
@@ -107,15 +105,23 @@ func (b *FileStorage[T]) Value(name string) (T, error) {
 	}
 }
 
-func (b *FileStorage[T]) Store(name string, value T) error {
-	if err := b.StoreMany(map[string]T{name: value}); err != nil {
+func (b *FileStorage[T]) Store(ctx context.Context, name string, value T) error {
+	if err := b.StoreMany(ctx, map[string]T{name: value}); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (b *FileStorage[T]) readFile() (map[string]FileEntry, error) {
+func (b *FileStorage[T]) readFile(ctx context.Context) (map[string]FileEntry, error) {
+	// Check if context is canceled before performing I/O
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+		// Continue with file operations
+	}
+
 	file, err := os.Open(b.filepath)
 	if err != nil {
 		return make(map[string]FileEntry), nil

@@ -1,24 +1,13 @@
-package metrics
+package collector
 
 import (
 	"math/rand"
 	"reflect"
 	"runtime"
+	"sync"
 )
 
-type Gauge float64
-type Counter uint64
-
-const GaugeName = "gauge"
-const CounterName = "counter"
-
-type Metrics struct {
-	ID    string   `json:"id"`              // metric name
-	MType string   `json:"type"`            // counter or gauge
-	Delta *Counter `json:"delta,omitempty"` // value for counter
-	Value *Gauge   `json:"value,omitempty"` // value for gauge
-}
-
+// List of memory statistics to collect
 var memStats = []string{
 	"Alloc",
 	"BuckHashSys",
@@ -49,16 +38,23 @@ var memStats = []string{
 	"TotalAlloc",
 }
 
+// Collector collects runtime metrics
 type Collector struct {
 	pollCount   Counter
 	randomValue Gauge
+	mu          sync.Mutex
 }
 
+// NewCollector creates a new metrics collector
 func NewCollector() *Collector {
 	return &Collector{}
 }
 
+// Collect gathers runtime metrics and stores them in the provided map
 func (c *Collector) Collect(out map[string]any) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
 	r := reflect.ValueOf(m)
@@ -79,12 +75,4 @@ func (c *Collector) Collect(out map[string]any) {
 
 	out["PollCount"] = c.pollCount
 	out["RandomValue"] = c.randomValue
-}
-
-func Exists(metric string) bool {
-	return metric != "unknown"
-}
-
-func IsValidType(t string) bool {
-	return t == GaugeName || t == CounterName
 }
